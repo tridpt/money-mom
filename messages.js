@@ -87,6 +87,114 @@ const MESSAGES = {
     ],
     idle: "Lâu rồi không gặp. Nghe nói dạo này vẫn tiêu hoang à?",
   },
+
+  boss: {
+    label: "💼 Sếp keo kiệt",
+    avatar: "🤵",
+    scold: [
+      "Tiêu kiểu này thì lương tháng sau khỏi tăng nhé em.",
+      "{amount} cho {note}? Em làm ra tiền chưa mà xài sang vậy?",
+      "Anh trả lương để em tiết kiệm, không phải để phá.",
+      "Em mà quản tiền dự án như quản ví thì công ty phá sản lâu rồi.",
+      "Hồi anh bằng tuổi em, anh nhịn ăn sáng để dành vốn đấy.",
+      "Cắt giảm chi phí đi em, bắt đầu từ cái {note} này.",
+      "{amount}? Đấy là tiền cà phê cả phòng anh trong một tuần.",
+      "Em xem lại KPI tiết kiệm của bản thân đi.",
+      "Tiêu hoang vậy thì OT thêm mà bù vào nhé.",
+      "Anh không tài trợ cho cái thói quen tốn kém này đâu.",
+    ],
+    essential: [
+      "Khoản này hợp lý, duyệt. Lần sau xuất hóa đơn đầy đủ nhé.",
+      "Được, chi phí thiết yếu thì anh không cắt. Nhưng tối ưu thêm đi.",
+      "Ừ cái này cần. Anh ghi nhận tinh thần tiết kiệm.",
+      "{amount} cho khoản thiết yếu, chấp nhận được. Đừng lạm dụng.",
+    ],
+    income: [
+      "Có thu nhập rồi đấy. Nhớ trích quỹ dự phòng nhé em.",
+      "{amount}? Tốt. Giờ học cách để tiền đẻ ra tiền đi.",
+      "Tiền về thì tái đầu tư, đừng tiêu hết như mọi lần.",
+      "Khá. Nhưng người làm cùng vị trí kiếm gấp rưỡi em đấy.",
+    ],
+    praise: [
+      "Cuối cùng cũng biết quản lý dòng tiền. Anh ghi nhận.",
+      "Bỏ quỹ {amount}? Tư duy tài chính có tiến bộ đấy em.",
+      "Tốt. Cứ kỷ luật thế này thì có ngày làm sếp được.",
+      "Tiết kiệm là kỹ năng. Em đang đi đúng hướng.",
+    ],
+    idle: "Báo cáo chi tiêu tuần này đâu em? Anh đang chờ.",
+  },
+
+  neighbor: {
+    label: "🏠 Bà hàng xóm nhiều chuyện",
+    avatar: "🧕",
+    scold: [
+      "Ối giời ơi, mua {note} cơ à? Để bác kể cho cả xóm nghe!",
+      "Con nhà bác Tư nó tiết kiệm mua được xe rồi, còn cháu thì...",
+      "{amount} một lúc? Bác mà có tiền đó bác mua được mấy cân thịt.",
+      "Bác nói thật, tiêu kiểu này thì ế chồng/ế vợ là đúng.",
+      "Cháu cứ xài hoang đi, rồi cả xóm biết hết cho coi.",
+      "Bác thấy cháu ship đồ về suốt à nha, để ý đấy!",
+      "Hồi xưa bác nuôi 5 đứa con bằng đúng số tiền {amount} một tháng.",
+      "Tiền nhiều thế cơ à? Cho bác vay tí coi... đùa đấy, để mà dành!",
+      "Cháu mua cái này, mai bác kể bà Bảy nghe cho mà xấu hổ.",
+      "Bác lo cho cháu thật đấy, chứ con bác nó không tiêu hoang vậy đâu.",
+    ],
+    essential: [
+      "À cái này thì cần thật, bác không nói nữa.",
+      "Ừ, đồ thiết yếu thì mua đi cháu, bác ủng hộ.",
+      "Cái này hợp lý, bác cũng hay mua. Giá đó là ổn đấy.",
+      "{amount} cho khoản này à? Bác mách chỗ rẻ hơn cho.",
+    ],
+    income: [
+      "Ơ cháu có tiền về à? Để bác mừng cho... mà giữ kỹ vào nhé!",
+      "{amount} cơ à? Giỏi! Mai bác khoe cả xóm cháu kiếm được tiền.",
+      "Có thu nhập rồi, lo mà cưới xin đi cháu ơi.",
+      "Tiền về thì gửi tiết kiệm, đừng cho ai vay nha cháu.",
+    ],
+    praise: [
+      "Ôi cháu biết tiết kiệm rồi à? Để bác kể cho cả xóm nghe cái tốt!",
+      "Bỏ ống {amount} cơ à? Ngoan, hơn khối đứa trong xóm này.",
+      "Đấy, cứ thế đi cháu. Bác sẽ khen cháu với mọi người.",
+      "Con bác mà được như cháu hôm nay thì bác mừng lắm.",
+    ],
+    idle: "Cháu ơi, dạo này tiêu pha thế nào, kể bác nghe coi?",
+  },
+
+  dad: {
+    label: "🧔 Ông bố lạnh lùng",
+    avatar: "🧔",
+    scold: [
+      "Tiêu {amount} cho {note}. Bố không nói gì. Bố chỉ thất vọng.",
+      "Con tự lo được thì tự chịu. Bố đã bảo rồi.",
+      "Im lặng. Bố nhìn cái hóa đơn này là đủ hiểu.",
+      "Tiền bố cho không phải để con phá thế này.",
+      "Con lớn rồi. Bố không nhắc lại lần hai.",
+      "{amount}. Bố ghi nhớ. Cuối năm tính sổ.",
+      "Bố không cấm. Nhưng bố không gửi tiền nữa đâu.",
+      "Đàn ông/đàn bà gì tiêu tiền không có kế hoạch.",
+      "Con làm bố nhớ lại hồi bố trẻ dại. Đừng giống bố.",
+      "Bố để con tự vấp. Đau thì mới nhớ.",
+    ],
+    essential: [
+      "Cái này cần. Bố đồng ý.",
+      "Được. Khoản này hợp lý.",
+      "Ừ. Chi tiêu có suy nghĩ là tốt.",
+      "Bố không phản đối khoản thiết yếu.",
+    ],
+    income: [
+      "Có tiền rồi. Giữ lấy. Đừng khoe.",
+      "{amount}. Tốt. Bố không cần con báo, nhưng bố vui.",
+      "Kiếm được tiền là bước đầu. Giữ được mới khó.",
+      "Ừ. Tái đầu tư đi. Đừng tiêu.",
+    ],
+    praise: [
+      "Con biết tiết kiệm. Bố gật đầu.",
+      "Bỏ quỹ {amount}. Bố không nói nhiều. Nhưng giỏi.",
+      "Được. Bố yên tâm hơn một chút.",
+      "Đây mới là con của bố.",
+    ],
+    idle: "Bố đang xem con tiêu gì đấy. Liệu liệu.",
+  },
 };
 
 // Lấy ngẫu nhiên 1 câu trong danh sách và thay thế biến
@@ -95,4 +203,19 @@ function pickMessage(list, vars) {
   return raw
     .replace(/\{amount\}/g, vars.amount || "khoản này")
     .replace(/\{note\}/g, vars.note || "cái đó");
+}
+
+// Thứ tự các nhân vật khi bấm đổi tính cách
+const MOOD_ORDER = ["mom", "ex", "boss", "neighbor", "dad"];
+
+// Câu leo thang khi tiêu hoang liên tiếp (combo). Theo mức combo.
+const COMBO_LINES = {
+  3: "🔥 Combo x3! Tiêu 3 lần liên tiếp rồi đấy, có biết dừng không?",
+  5: "🔥🔥 Combo x5! Đốt tiền có khén thế? Ghê thật sự!",
+  7: "🔥🔥🔥 Combo x7! Thôi xong, không ai cứu nổi cái ví này nữa rồi!",
+  10: "💀 COMBO x10! Đỉnh cao của sự hoang phí. Mẹ lạy con luôn đó!",
+};
+function comboLine(combo) {
+  // Chỉ hiện đúng tại các mốc combo (cho cảm giác sự kiện)
+  return COMBO_LINES[combo] || null;
 }

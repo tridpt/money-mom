@@ -571,3 +571,95 @@ body {
 .saving-rate-head { display: flex; justify-content: space-between; font-weight: 700; margin-bottom: 10px; }
 #savingRateValue { color: var(--income); }
 .saving-rate-note { font-size: 12.5px; color: var(--muted); margin-top: 8px; }
+
+/* ===== Streak & combo ===== */
+.mini.streak .stat-value-sm { color: #ff9f43; }
+.mini.combo .stat-value-sm { color: var(--expense); }
+.mini.combo.hot { animation: comboPulse .5s; border-color: var(--expense); }
+@keyframes comboPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); box-shadow: 0 0 20px rgba(255,107,107,.4); }
+}
+
+/* ===== AI box ===== */
+.ai-box {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+}
+.ai-box summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  list-style: none;
+}
+.ai-box summary::-webkit-details-marker { display: none; }
+.ai-box[open] summary { margin-bottom: 12px; }
+.ai-body { display: flex; flex-direction: column; gap: 10px; }
+.ai-note { font-size: 12.5px; color: var(--muted); line-height: 1.5; }
+.ai-note b { color: var(--text); }
+.ai-toggle { display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 600; cursor: pointer; }
+.ai-toggle input { width: 16px; height: 16px; accent-color: var(--accent); }
+.ai-body input[type="password"] {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+}
+.ai-body input[type="password"]:focus { outline: none; border-color: var(--accent-2); }
+#aiSaveBtn {
+  background: var(--accent-2);
+  border: none;
+  color: #fff;
+  padding: 10px;
+  border-radius: 10px;
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.ai-status { font-size: 12.5px; font-weight: 600; }
+.ai-status.ok { color: var(--income); }
+.ai-status.err { color: var(--expense); }
+.ai-thinking { font-style: italic; opacity: .7; }
+
+/* ===== Achievements ===== */
+.achievements { margin-top: 20px; }
+.ach-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 22px;
+  box-shadow: var(--shadow);
+}
+.ach-count { color: var(--muted); font-weight: 700; font-size: 14px; }
+.ach-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+}
+.ach-item {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 14px;
+  text-align: center;
+  transition: transform .15s;
+  opacity: .45;
+  filter: grayscale(1);
+}
+.ach-item.unlocked {
+  opacity: 1;
+  filter: none;
+  border-color: var(--accent);
+  background: linear-gradient(160deg, rgba(124,92,255,.12), rgba(255,93,143,.08));
+}
+.ach-item:hover { transform: translateY(-3px); }
+.ach-emoji { font-size: 34px; }
+.ach-title { font-weight: 700; font-size: 13.5px; margin-top: 6px; }
+.ach-desc { font-size: 11.5px; color: var(--muted); margin-top: 3px; line-height: 1.4; }
+.ach-item.unlocked .ach-badge { color: var(--income); font-size: 11px; font-weight: 700; margin-top: 6px; display: block; }
+.ach-item:not(.unlocked) .ach-badge { color: var(--muted); font-size: 11px; margin-top: 6px; display: block; }

@@ -9,8 +9,12 @@ let state = {
   salary: 0,
   budget: 0,
   soundOn: true,
-  mood: "mom", // "mom" | "ex"
-  transactions: [], // { id, type, amount, note, essential, ts }
+  mood: "mom", // mom | ex | boss | neighbor | dad
+  combo: 0,        // số lần tiêu hoang liên tiếp
+  maxCombo: 0,     // combo cao nhất từng đạt
+  unlocked: [],    // id các huy hiệu đã mở
+  ai: { enabled: false, key: "" },
+  transactions: [], // { id, type, amount, note, essential, category, ts }
   ui: {
     type: "expense", // expense | income | saving
     essential: false,
@@ -93,6 +97,18 @@ const el = {
   savingRateValue: $("savingRateValue"),
   savingRateFill: $("savingRateFill"),
   savingRateNote: $("savingRateNote"),
+  // Mới: streak & combo
+  streakValue: $("streakValue"),
+  comboValue: $("comboValue"),
+  comboCard: document.querySelector(".mini.combo"),
+  // Mới: huy hiệu
+  achGrid: $("achGrid"),
+  achCount: $("achCount"),
+  // Mới: AI
+  aiEnabled: $("aiEnabled"),
+  aiKey: $("aiKey"),
+  aiSaveBtn: $("aiSaveBtn"),
+  aiStatus: $("aiStatus"),
 };
 
 let pieRangeMode = "month"; // month | all
@@ -366,11 +382,25 @@ function reactTo(transaction) {
         sound = "over";
       }
     }
+    // Combo tiêu hoang liên tiếp -> câu leo thang
+    if (!transaction.essential) {
+      const cl = comboLine(state.combo);
+      if (cl) {
+        text += " " + cl;
+        tone = "scold";
+        sound = "over";
+      }
+    }
   }
 
   lastReaction = { text, tone, mood: state.mood };
   speak(text, tone);
   if (sound) playSound(sound);
+
+  // Nếu bật AI: thử sinh câu mắng riêng (bất đồng bộ, thay thế khi có)
+  if (state.ai.enabled && state.ai.key && transaction.type === "expense" && !transaction.essential) {
+    generateAIScold(transaction, tone);
+  }
 }
 
 const OVER_BUDGET_LINES = [
@@ -405,12 +435,23 @@ function addTransaction() {
   };
 
   state.transactions.push(t);
+
+  // Cập nhật combo tiêu hoang
+  if (t.type === "expense" && !t.essential) {
+    state.combo += 1;
+    if (state.combo > state.maxCombo) state.maxCombo = state.combo;
+  } else {
+    state.combo = 0; // tiết kiệm/thu nhập/chi thiết yếu -> chuộc lỗi
+  }
+
   save();
   renderStats();
   renderHistory();
   renderBudget();
   renderAnalytics();
+  renderStreakCombo();
   reactTo(t);
+  checkAchievements();
 
   // Reset form
   el.amountInput.value = "";
@@ -425,17 +466,20 @@ function deleteTransaction(id) {
   renderHistory();
   renderBudget();
   renderAnalytics();
+  renderStreakCombo();
 }
 
 function clearAll() {
   if (state.transactions.length === 0) return;
   if (!confirm("Xóa hết sổ chi tiêu? Mẹ sẽ quên hết tội của con đấy.")) return;
   state.transactions = [];
+  state.combo = 0;
   save();
   renderStats();
   renderHistory();
   renderBudget();
   renderAnalytics();
+  renderStreakCombo();
   speak("Xóa sạch rồi. Coi như mẹ tha cho con lần này. Làm lại từ đầu nha.", "praise");
 }
 
@@ -487,7 +531,8 @@ function setEssential(val) {
 }
 
 function toggleMood() {
-  state.mood = state.mood === "mom" ? "ex" : "mom";
+  const idx = MOOD_ORDER.indexOf(state.mood);
+  state.mood = MOOD_ORDER[(idx + 1) % MOOD_ORDER.length];
   save();
   renderMood();
   const m = MESSAGES[state.mood];
@@ -881,6 +926,171 @@ function renderAnalytics() {
   renderCompare();
 }
 
+// ---- Streak & combo ----
+function dayKey(d) { return d.getFullYear() + "-" + d.getMonth() + "-" + d.getDate(); }
+
+function getSplurgeDaySet() {
+  const set = new Set();
+  for (const t of state.transactions) {
+    if (t.type === "expense" && !t.essential) set.add(dayKey(new Date(t.ts)));
+  }
+  return set;
+}
+
+function computeStreak() {
+  if (state.transactions.length === 0) return 0;
+  const splurge = getSplurgeDaySet();
+  const firstTs = Math.min(...state.transactions.map((t) => t.ts));
+  const first = new Date(firstTs); first.setHours(0, 0, 0, 0);
+  let streak = 0;
+  const d = new Date(); d.setHours(0, 0, 0, 0);
+  while (d.getTime() >= first.getTime()) {
+    if (splurge.has(dayKey(d))) break;
+    streak++;
+    d.setDate(d.getDate() - 1);
+  }
+  return streak;
+}
+
+function renderStreakCombo() {
+  el.streakValue.textContent = computeStreak() + " ngày";
+  el.comboValue.textContent = "x" + state.combo;
+  if (el.comboCard) {
+    el.comboCard.classList.remove("hot");
+    if (state.combo >= 3) {
+      void el.comboCard.offsetWidth;
+      el.comboCard.classList.add("hot");
+    }
+  }
+}
+
+// ---- Huy hiệu & thành tích ----
+const ACHIEVEMENTS = [
+  { id: "first_note",  icon: "📝", title: "Lần đầu ghi sổ",      desc: "Ghi khoản đầu tiên",                 check: (s) => s.txCount >= 1 },
+  { id: "piggy_saint", icon: "🐷", title: "Thánh bỏ ống",        desc: "Tổng tiết kiệm đạt 1 triệu",          check: (s) => s.totalSaving >= 1000000 },
+  { id: "saver_5",     icon: "💰", title: "Chăm bỏ heo",         desc: "Bỏ ống đủ 5 lần",                     check: (s) => s.savingCount >= 5 },
+  { id: "streak_3",    icon: "🔥", title: "3 ngày không trà sữa", desc: "3 ngày liên tiếp không tiêu hoang",   check: (s) => s.streak >= 3 },
+  { id: "streak_7",    icon: "🧘", title: "Tuần lễ kỷ luật",      desc: "7 ngày liên tiếp không tiêu hoang",   check: (s) => s.streak >= 7 },
+  { id: "rate_30",     icon: "🏦", title: "Tay hòm chìa khóa",    desc: "Tỷ lệ tiết kiệm ≥ 30% trong tháng",   check: (s) => s.savingRate >= 30 },
+  { id: "spender_god", icon: "💸", title: "Chúa chi tiêu",        desc: "Chi hơn 5 triệu trong một tháng",     check: (s) => s.expenseThis >= 5000000 },
+  { id: "combo_5",     icon: "🎆", title: "Đốt tiền nghệ thuật",  desc: "Đạt combo tiêu hoang x5",             check: (s) => s.maxCombo >= 5 },
+  { id: "combo_10",    icon: "💀", title: "Vô phương cứu chữa",   desc: "Đạt combo tiêu hoang x10",            check: (s) => s.maxCombo >= 10 },
+];
+
+function buildAchStats() {
+  let totalSaving = 0, savingCount = 0, totalExpense = 0, splurgeCount = 0, incomeTotal = 0;
+  for (const t of state.transactions) {
+    if (t.type === "saving") { totalSaving += t.amount; savingCount++; }
+    else if (t.type === "expense") { totalExpense += t.amount; if (!t.essential) splurgeCount++; }
+    else if (t.type === "income") { incomeTotal += t.amount; }
+  }
+  const now = new Date();
+  const savingThis = monthSum("saving", now.getFullYear(), now.getMonth());
+  const incomeThis = monthSum("income", now.getFullYear(), now.getMonth());
+  const expenseThis = monthSum("expense", now.getFullYear(), now.getMonth());
+  const moneyIn = state.salary + incomeThis;
+  const savingRate = moneyIn > 0 ? (savingThis / moneyIn) * 100 : 0;
+  return {
+    totalSaving, savingCount, totalExpense, splurgeCount, incomeTotal,
+    streak: computeStreak(), maxCombo: state.maxCombo, savingRate, expenseThis,
+    txCount: state.transactions.length,
+  };
+}
+
+function renderAchievements() {
+  el.achGrid.innerHTML = "";
+  for (const a of ACHIEVEMENTS) {
+    const unlocked = state.unlocked.includes(a.id);
+    const div = document.createElement("div");
+    div.className = "ach-item" + (unlocked ? " unlocked" : "");
+    div.innerHTML = `<div class="ach-emoji">${a.icon}</div>
+      <div class="ach-title">${a.title}</div>
+      <div class="ach-desc">${a.desc}</div>
+      <span class="ach-badge">${unlocked ? "✓ Đã mở" : "🔒 Chưa mở"}</span>`;
+    el.achGrid.appendChild(div);
+  }
+  el.achCount.textContent = `${state.unlocked.length}/${ACHIEVEMENTS.length}`;
+}
+
+function checkAchievements(silent) {
+  const s = buildAchStats();
+  const newly = [];
+  for (const a of ACHIEVEMENTS) {
+    if (!state.unlocked.includes(a.id) && a.check(s)) {
+      state.unlocked.push(a.id);
+      newly.push(a);
+    }
+  }
+  if (newly.length) {
+    save();
+    renderAchievements();
+    if (!silent) {
+      const a = newly[0];
+      setTimeout(() => {
+        showToast(`🏆 Mở khóa huy hiệu: ${a.icon} ${a.title}!`, "praise");
+        playSound("praise");
+      }, 1200);
+    }
+  }
+}
+
+// ---- AI (tùy chọn, dùng key của người dùng, lưu cục bộ) ----
+function setAIStatus(msg, cls) {
+  el.aiStatus.textContent = msg;
+  el.aiStatus.className = "ai-status" + (cls ? " " + cls : "");
+}
+
+function saveAI() {
+  state.ai.enabled = el.aiEnabled.checked;
+  state.ai.key = el.aiKey.value.trim();
+  save();
+  if (state.ai.enabled && !state.ai.key) {
+    setAIStatus("Đã bật nhưng chưa có key. Dán API key vào nhé.", "err");
+  } else if (state.ai.enabled) {
+    setAIStatus("Đã bật AI. Thử ghi một khoản tiêu hoang xem mẹ chửi gì!", "ok");
+  } else {
+    setAIStatus("Đã tắt AI. Dùng lại câu thoại có sẵn.", "");
+  }
+}
+
+const AI_PERSONA = {
+  mom: "một người mẹ Việt Nam nghiêm khắc, hay cằn nhằn",
+  ex: "một người yêu cũ thực dụng, mỉa mai, hay nhắc chuyện cũ",
+  boss: "một ông sếp keo kiệt, hay nói về tiền bạc và năng suất",
+  neighbor: "một bà hàng xóm Việt nhiều chuyện, hay so sánh và đem chuyện đi kể",
+  dad: "một ông bố Việt lạnh lùng, ít nói, hay thất vọng",
+};
+
+async function generateAIScold(transaction, tone) {
+  el.momMessage.classList.add("ai-thinking");
+  try {
+    const persona = AI_PERSONA[state.mood] || AI_PERSONA.mom;
+    const prompt = `Bạn đóng vai ${persona}. Người dùng vừa chi ${formatVND(transaction.amount)} cho "${transaction.note || "một khoản không thiết yếu"}". Hãy mắng hoặc khích bác họ bằng ĐÚNG MỘT câu tiếng Việt ngắn (dưới 30 từ), hài hước, đúng giọng nhân vật, không emoji, không xuống dòng.`;
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + state.ai.key },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: 80,
+        temperature: 1.0,
+      }),
+    });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const data = await res.json();
+    const txt = (data.choices && data.choices[0] && data.choices[0].message.content || "").trim();
+    el.momMessage.classList.remove("ai-thinking");
+    if (txt) {
+      lastReaction = { text: txt, tone, mood: state.mood };
+      speak(txt, tone);
+    }
+  } catch (e) {
+    el.momMessage.classList.remove("ai-thinking");
+    setAIStatus("AI lỗi (" + e.message + "). Tạm dùng câu có sẵn.", "err");
+    console.warn("AI error:", e);
+  }
+}
+
 // ---- Events ----
 function bindEvents() {
   el.addBtn.addEventListener("click", addTransaction);
@@ -953,6 +1163,9 @@ function bindEvents() {
   // Âm thanh
   el.soundBtn.addEventListener("click", toggleSound);
 
+  // AI
+  el.aiSaveBtn.addEventListener("click", saveAI);
+
   // Chia sẻ
   el.shareBtn.addEventListener("click", openShareModal);
   el.shareClose.addEventListener("click", closeShareModal);
@@ -975,6 +1188,9 @@ function init() {
   renderBudget();
   renderCategoryGrid();
   renderAnalytics();
+  renderStreakCombo();
+  renderAchievements();
+  checkAchievements(true); // mở khóa lại các huy hiệu đã đạt, không báo
   setType(state.ui.type);
   setEssential(state.ui.essential);
   // Khôi phục trạng thái âm thanh
@@ -984,6 +1200,9 @@ function init() {
   if (state.budget > 0) {
     el.budgetInput.value = new Intl.NumberFormat("vi-VN").format(state.budget);
   }
+  // Khôi phục cài đặt AI
+  el.aiEnabled.checked = !!state.ai.enabled;
+  el.aiKey.value = state.ai.key || "";
   // Lời chào mở màn
   lastReaction = { text: MESSAGES[state.mood].idle, tone: null, mood: state.mood };
   el.momMessage.textContent = MESSAGES[state.mood].idle;

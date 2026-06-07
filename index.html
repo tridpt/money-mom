@@ -57,6 +57,16 @@
               <span class="stat-value-sm" id="savingValue">0₫</span>
             </div>
           </div>
+          <div class="stat-row">
+            <div class="stat-card mini streak">
+              <span class="stat-label">🔥 Không tiêu hoang</span>
+              <span class="stat-value-sm" id="streakValue">0 ngày</span>
+            </div>
+            <div class="stat-card mini combo">
+              <span class="stat-label">💥 Combo tiêu hoang</span>
+              <span class="stat-value-sm" id="comboValue">x0</span>
+            </div>
+          </div>
         </div>
 
         <div class="salary-box">
@@ -79,6 +89,22 @@
             <p class="budget-status" id="budgetStatus"></p>
           </div>
         </div>
+
+        <details class="ai-box" id="aiBox">
+          <summary>🤖 Chế độ AI — để mẹ chửi sáng tạo</summary>
+          <div class="ai-body">
+            <p class="ai-note">
+              Bật để mẹ (và các nhân vật) tự nghĩ câu mắng riêng cho từng khoản, không lặp lại.
+              Dùng API tương thích OpenAI. <b>Key lưu ngay trên máy bạn</b> và gọi thẳng tới nhà cung cấp — không gửi đi đâu khác.
+            </p>
+            <label class="ai-toggle">
+              <input type="checkbox" id="aiEnabled" /> Bật chế độ AI
+            </label>
+            <input type="password" id="aiKey" placeholder="Dán API key (vd: sk-...)" autocomplete="off" />
+            <button id="aiSaveBtn">Lưu cài đặt AI</button>
+            <p class="ai-status" id="aiStatus"></p>
+          </div>
+        </details>
       </section>
 
       <!-- RIGHT: Add form + history -->
@@ -164,6 +190,17 @@
           <div class="budget-bar"><div class="budget-bar-fill" id="savingRateFill"></div></div>
           <p class="saving-rate-note" id="savingRateNote"></p>
         </div>
+      </div>
+    </section>
+
+    <!-- Achievements -->
+    <section class="achievements">
+      <div class="ach-card">
+        <div class="chart-head">
+          <h2>Huy hiệu &amp; thành tích 🏆</h2>
+          <span class="ach-count" id="achCount">0/0</span>
+        </div>
+        <div class="ach-grid" id="achGrid"></div>
       </div>
     </section>
 
