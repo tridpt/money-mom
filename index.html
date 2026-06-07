@@ -4,6 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Mẹ Thiên Hạ 💸 - Quản lý tài chính kiểu "bị mắng mới chừa"</title>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#ff5d8f" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+  <link rel="icon" type="image/png" href="icon-192.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
@@ -20,6 +24,8 @@
         </div>
       </div>
       <div class="topbar-actions">
+        <button id="themeBtn" class="icon-btn" title="Đổi giao diện sáng/tối">🌙</button>
+        <button id="installBtn" class="icon-btn" title="Cài đặt app" style="display:none;">⬇️</button>
         <button id="soundBtn" class="icon-btn" title="Bật/tắt âm thanh">🔊</button>
         <button id="moodBtn" class="mood-btn" title="Đổi tính cách">
           <span id="moodLabel">😤 Mẹ nghiêm khắc</span>
@@ -232,6 +238,23 @@
       </div>
     </div>
   </div>
+
+  <!-- Onboarding -->
+  <div class="modal-overlay" id="onboardModal">
+    <div class="modal onboard">
+      <div class="onboard-emoji" id="onboardEmoji">👩‍🦰</div>
+      <h3 id="onboardTitle">Chào con, mẹ là Mẹ Thiên Hạ!</h3>
+      <p id="onboardText">Mẹ sẽ giúp con quản lý tiền bạc... bằng cách mắng cho con chừa cái tật tiêu hoang.</p>
+      <div class="onboard-dots" id="onboardDots"></div>
+      <div class="onboard-actions">
+        <button id="onboardSkip" class="onboard-skip">Bỏ qua</button>
+        <button id="onboardNext" class="onboard-next">Tiếp →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confetti -->
+  <canvas id="confettiCanvas" class="confetti-canvas"></canvas>
 
   <script src="messages.js"></script>
   <script src="app.js"></script>

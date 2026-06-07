@@ -9,6 +9,8 @@ let state = {
   salary: 0,
   budget: 0,
   soundOn: true,
+  theme: "dark",        // dark | light
+  onboardingDone: false,
   mood: "mom", // mom | ex | boss | neighbor | dad
   combo: 0,        // số lần tiêu hoang liên tiếp
   maxCombo: 0,     // combo cao nhất từng đạt
@@ -109,6 +111,17 @@ const el = {
   aiKey: $("aiKey"),
   aiSaveBtn: $("aiSaveBtn"),
   aiStatus: $("aiStatus"),
+  // Mới: theme & PWA & onboarding & confetti
+  themeBtn: $("themeBtn"),
+  installBtn: $("installBtn"),
+  onboardModal: $("onboardModal"),
+  onboardEmoji: $("onboardEmoji"),
+  onboardTitle: $("onboardTitle"),
+  onboardText: $("onboardText"),
+  onboardDots: $("onboardDots"),
+  onboardSkip: $("onboardSkip"),
+  onboardNext: $("onboardNext"),
+  confettiCanvas: $("confettiCanvas"),
 };
 
 let pieRangeMode = "month"; // month | all
@@ -761,10 +774,10 @@ function drawPie(canvas, segments) {
   // Lỗ giữa (donut)
   ctx.beginPath();
   ctx.arc(cx, cy, rInner, 0, Math.PI * 2);
-  ctx.fillStyle = "#1c1d33";
+  ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--card").trim() || "#1c1d33";
   ctx.fill();
   // Chữ giữa
-  ctx.fillStyle = "#ecedf7";
+  ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--text").trim() || "#ecedf7";
   ctx.textAlign = "center";
   ctx.font = "700 30px 'Be Vietnam Pro', sans-serif";
   ctx.fillText(formatShort(total), cx, cy + 4);
@@ -1029,6 +1042,7 @@ function checkAchievements(silent) {
       setTimeout(() => {
         showToast(`🏆 Mở khóa huy hiệu: ${a.icon} ${a.title}!`, "praise");
         playSound("praise");
+        fireConfetti();
       }, 1200);
     }
   }
@@ -1089,6 +1103,146 @@ async function generateAIScold(transaction, tone) {
     setAIStatus("AI lỗi (" + e.message + "). Tạm dùng câu có sẵn.", "err");
     console.warn("AI error:", e);
   }
+}
+
+// ---- Theme sáng/tối ----
+function applyTheme() {
+  document.documentElement.setAttribute("data-theme", state.theme);
+  el.themeBtn.textContent = state.theme === "light" ? "☀️" : "🌙";
+  if (state.transactions.length) renderAnalytics(); // vẽ lại biểu đồ theo màu mới
+}
+
+function toggleTheme() {
+  state.theme = state.theme === "light" ? "dark" : "light";
+  save();
+  applyTheme();
+}
+
+// ---- PWA: service worker + nút cài đặt ----
+let deferredPrompt = null;
+
+function setupPWA() {
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("sw.js").catch((e) => console.warn("SW lỗi:", e));
+  }
+  window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    el.installBtn.style.display = "";
+  });
+  window.addEventListener("appinstalled", () => {
+    el.installBtn.style.display = "none";
+    deferredPrompt = null;
+  });
+}
+
+async function doInstall() {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  el.installBtn.style.display = "none";
+}
+
+// ---- Onboarding ----
+const ONBOARD_STEPS = [
+  { emoji: "👩‍🦰", title: "Chào con, mẹ là Mẹ Thiên Hạ!", text: "Mẹ sẽ giúp con quản lý tiền bạc... bằng cách mắng cho con chừa cái tật tiêu hoang." },
+  { emoji: "🛍️", title: "Ghi mọi khoản tiền", text: "Nhập khoản chi, thu nhập hay tiết kiệm. Tiêu thứ không thiết yếu là mẹ mắng ngay tại chỗ!" },
+  { emoji: "🎭", title: "5 nhân vật khó tính", text: "Bấm nút góc trên để đổi giữa Mẹ, Người yêu cũ, Sếp keo kiệt, Bà hàng xóm và Ông bố lạnh lùng." },
+  { emoji: "🎯", title: "Hạn mức & huy hiệu", text: "Đặt hạn mức tháng, giữ streak không tiêu hoang và mở khóa các huy hiệu thành tích." },
+  { emoji: "📸", title: "Khoe lời mẹ phán", text: "Tạo ảnh câu mắng để chia sẻ lên mạng xã hội. Giờ thì bắt đầu tiết kiệm thôi nào!" },
+];
+let onboardStep = 0;
+
+function renderOnboard() {
+  const s = ONBOARD_STEPS[onboardStep];
+  el.onboardEmoji.textContent = s.emoji;
+  el.onboardTitle.textContent = s.title;
+  el.onboardText.textContent = s.text;
+  el.onboardDots.innerHTML = ONBOARD_STEPS
+    .map((_, i) => `<span class="${i === onboardStep ? "active" : ""}"></span>`)
+    .join("");
+  el.onboardNext.textContent = onboardStep === ONBOARD_STEPS.length - 1 ? "Bắt đầu 🎉" : "Tiếp →";
+}
+
+function openOnboard() {
+  onboardStep = 0;
+  renderOnboard();
+  el.onboardModal.classList.add("show");
+}
+
+function nextOnboard() {
+  if (onboardStep < ONBOARD_STEPS.length - 1) {
+    onboardStep++;
+    renderOnboard();
+  } else {
+    finishOnboard();
+  }
+}
+
+function finishOnboard() {
+  el.onboardModal.classList.remove("show");
+  if (!state.onboardingDone) {
+    state.onboardingDone = true;
+    save();
+    fireConfetti();
+  }
+}
+
+// ---- Confetti (canvas, không cần thư viện) ----
+let confettiRAF = null;
+
+function fireConfetti() {
+  const canvas = el.confettiCanvas;
+  canvas.classList.add("show");
+  const W = window.innerWidth, H = window.innerHeight;
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext("2d");
+  const colors = ["#ff5d8f", "#7c5cff", "#ffd166", "#36d399", "#4d96ff"];
+  const parts = [];
+  for (let i = 0; i < 150; i++) {
+    parts.push({
+      x: W / 2 + (Math.random() - 0.5) * W * 0.4,
+      y: H * 0.28 + (Math.random() - 0.5) * 60,
+      vx: (Math.random() - 0.5) * 13,
+      vy: Math.random() * -13 - 3,
+      g: 0.3 + Math.random() * 0.25,
+      size: 6 + Math.random() * 9,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      rot: Math.random() * Math.PI,
+      vrot: (Math.random() - 0.5) * 0.35,
+    });
+  }
+  const start = performance.now();
+  cancelAnimationFrame(confettiRAF);
+  function frame(now) {
+    const t = now - start;
+    ctx.clearRect(0, 0, W, H);
+    let alive = false;
+    for (const p of parts) {
+      p.vy += p.g;
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vx *= 0.99;
+      p.rot += p.vrot;
+      if (p.y < H + 30) alive = true;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.globalAlpha = Math.max(0, 1 - t / 2700);
+      ctx.fillStyle = p.color;
+      ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
+      ctx.restore();
+    }
+    if (alive && t < 2900) {
+      confettiRAF = requestAnimationFrame(frame);
+    } else {
+      ctx.clearRect(0, 0, W, H);
+      canvas.classList.remove("show");
+    }
+  }
+  confettiRAF = requestAnimationFrame(frame);
 }
 
 // ---- Events ----
@@ -1175,6 +1329,12 @@ function bindEvents() {
   el.shareNative.addEventListener("click", shareNative);
   el.shareDownload.addEventListener("click", downloadImage);
   el.shareCopy.addEventListener("click", copyCaption);
+
+  // Theme, PWA, onboarding
+  el.themeBtn.addEventListener("click", toggleTheme);
+  el.installBtn.addEventListener("click", doInstall);
+  el.onboardNext.addEventListener("click", nextOnboard);
+  el.onboardSkip.addEventListener("click", finishOnboard);
 }
 
 // ---- Init ----
@@ -1203,9 +1363,16 @@ function init() {
   // Khôi phục cài đặt AI
   el.aiEnabled.checked = !!state.ai.enabled;
   el.aiKey.value = state.ai.key || "";
+  // Theme + PWA
+  applyTheme();
+  setupPWA();
   // Lời chào mở màn
   lastReaction = { text: MESSAGES[state.mood].idle, tone: null, mood: state.mood };
   el.momMessage.textContent = MESSAGES[state.mood].idle;
+  // Onboarding lần đầu
+  if (!state.onboardingDone) {
+    setTimeout(openOnboard, 400);
+  }
 }
 
 init();

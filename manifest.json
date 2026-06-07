@@ -1,0 +1,26 @@
+{
+  "name": "Mẹ Thiên Hạ - Quản lý tài chính",
+  "short_name": "Mẹ Thiên Hạ",
+  "description": "Quản lý tài chính kiểu bị mắng mới chịu tiết kiệm.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f1020",
+  "theme_color": "#ff5d8f",
+  "lang": "vi",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

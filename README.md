@@ -16,6 +16,9 @@ Thay vì những biểu đồ thu chi khô khan, Money Mom quản lý ví tiền
 - 🔥 **Streak tiết kiệm**: đếm số ngày liên tiếp không tiêu hoang.
 - 🏆 **Huy hiệu & thành tích**: "Thánh bỏ ống", "Chúa chi tiêu", "Tay hòm chìa khóa"...
 - 🤖 **Chế độ AI (tùy chọn)**: mẹ tự nghĩ câu mắng riêng cho từng khoản (dùng API key của bạn, lưu cục bộ).
+- 📲 **PWA**: cài lên màn hình điện thoại như app thật, có icon, chạy offline.
+- 🌗 **Giao diện sáng/tối** + màn hình hướng dẫn lần đầu (onboarding).
+- 🎉 **Hiệu ứng confetti** khi mở khóa huy hiệu.
 - 💼 **Khai báo lương tháng** để được "so sánh" cho thấm.
 - 🎯 **Hạn mức chi tiêu tháng** + thanh tiến độ — vượt ngân sách là mẹ "nổi điên".
 - 🥧 **Biểu đồ tròn**: xem tiền đi đâu nhiều nhất theo danh mục (ăn uống, mua sắm, đi lại...).
@@ -45,8 +48,11 @@ npx http-server . -p 8080 -c-1
 money-mom/
 ├── index.html     # Giao diện
 ├── styles.css     # Phối màu, animation, bong bóng thoại
-├── messages.js    # Kho câu thoại của "mẹ" (phần linh hồn)
-└── app.js         # Logic: state, render, localStorage
+├── messages.js    # Kho câu thoại của các nhân vật (phần linh hồn)
+├── app.js         # Logic: state, render, localStorage, biểu đồ, PWA
+├── manifest.json  # Khai báo PWA
+├── sw.js          # Service worker (chạy offline)
+└── icon-192.png, icon-512.png  # Icon app
 ```
 
 ## 🛠️ Công nghệ
@@ -57,8 +63,8 @@ Vanilla HTML/CSS/JavaScript. Không framework, không dependency.
 
 - Mục tiêu tiết kiệm ("để dành 10 triệu mua iPhone") + thanh tiến độ
 - Chi tiêu định kỳ tự nhắc hằng tháng
-- PWA: cài như app trên điện thoại, chạy offline
-- Chia sẻ huy hiệu/thành tích lên mạng xã hội
+- Lọc & tìm kiếm, sửa giao dịch
+- Xuất / nhập dữ liệu (JSON/CSV) để backup
 
 ## 📄 License
 
