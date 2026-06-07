@@ -102,6 +102,11 @@
             <input type="text" id="noteInput" placeholder="VD: Mua cốc trà sữa" autocomplete="off" />
           </div>
 
+          <div class="field" id="categoryField">
+            <label>Danh mục</label>
+            <div class="category-grid" id="categoryGrid"></div>
+          </div>
+
           <div class="field" id="essentialField">
             <label>Khoản này có thiết yếu không?</label>
             <div class="essential-toggle" id="essentialToggle">
@@ -124,6 +129,43 @@
         </div>
       </section>
     </main>
+
+    <!-- Analytics -->
+    <section class="analytics">
+      <div class="chart-card">
+        <div class="chart-head">
+          <h2>Tiền đi đâu nhiều nhất 🥧</h2>
+          <div class="range-tabs" id="pieRange">
+            <button class="range-tab active" data-range="month">Tháng này</button>
+            <button class="range-tab" data-range="all">Tất cả</button>
+          </div>
+        </div>
+        <div class="pie-wrap">
+          <canvas id="pieChart" width="320" height="320"></canvas>
+          <ul class="pie-legend" id="pieLegend"></ul>
+        </div>
+        <p class="chart-empty" id="pieEmpty">Chưa có khoản chi nào để vẽ. Tiêu đi rồi mẹ vẽ cho xem 🤨</p>
+      </div>
+
+      <div class="chart-card">
+        <h2>Chi tiêu 6 tháng gần đây 📊</h2>
+        <canvas id="barChart" width="640" height="300"></canvas>
+        <p class="chart-empty" id="barEmpty">Chưa có dữ liệu. Đợi con tiêu thêm vài tháng nữa nha.</p>
+      </div>
+
+      <div class="chart-card compare">
+        <h2>Tháng này so với tháng trước 📈</h2>
+        <div class="compare-grid" id="compareStats"></div>
+        <div class="saving-rate">
+          <div class="saving-rate-head">
+            <span>Tỷ lệ tiết kiệm tháng này</span>
+            <span id="savingRateValue">0%</span>
+          </div>
+          <div class="budget-bar"><div class="budget-bar-fill" id="savingRateFill"></div></div>
+          <p class="saving-rate-note" id="savingRateNote"></p>
+        </div>
+      </div>
+    </section>
 
     <footer class="footer">
       <p>Dữ liệu lưu ngay trên máy bạn. Mẹ không lưu trên mây, mẹ chỉ lưu trong tim 💚</p>

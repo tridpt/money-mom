@@ -14,11 +14,26 @@ let state = {
   ui: {
     type: "expense", // expense | income | saving
     essential: false,
+    category: "food",
   },
 };
 
 // Lời mẹ phán gần nhất (để chia sẻ)
 let lastReaction = { text: MESSAGES.mom.idle, tone: null, mood: "mom" };
+
+// ---- Danh mục chi tiêu ----
+const CATEGORIES = [
+  { id: "food",      label: "Ăn uống",   icon: "🍜", essential: false, color: "#ff6b6b" },
+  { id: "shopping",  label: "Mua sắm",   icon: "🛍️", essential: false, color: "#ff5d8f" },
+  { id: "transport", label: "Đi lại",    icon: "🚗", essential: true,  color: "#4d96ff" },
+  { id: "bills",     label: "Hóa đơn",   icon: "🧾", essential: true,  color: "#7c5cff" },
+  { id: "fun",       label: "Giải trí",  icon: "🎮", essential: false, color: "#ffd166" },
+  { id: "health",    label: "Sức khỏe",  icon: "💊", essential: true,  color: "#36d399" },
+  { id: "edu",       label: "Học tập",   icon: "📚", essential: true,  color: "#22d3ee" },
+  { id: "other",     label: "Khác",      icon: "📦", essential: false, color: "#9a9bc0" },
+];
+const CAT_MAP = Object.fromEntries(CATEGORIES.map((c) => [c.id, c]));
+function getCat(id) { return CAT_MAP[id] || CAT_MAP.other; }
 
 // ---- DOM ----
 const $ = (id) => document.getElementById(id);
@@ -64,7 +79,23 @@ const el = {
   shareFb: $("shareFb"),
   shareTw: $("shareTw"),
   shareThreads: $("shareThreads"),
+  // Mới: danh mục
+  categoryField: $("categoryField"),
+  categoryGrid: $("categoryGrid"),
+  // Mới: biểu đồ
+  pieChart: $("pieChart"),
+  pieLegend: $("pieLegend"),
+  pieEmpty: $("pieEmpty"),
+  pieRange: $("pieRange"),
+  barChart: $("barChart"),
+  barEmpty: $("barEmpty"),
+  compareStats: $("compareStats"),
+  savingRateValue: $("savingRateValue"),
+  savingRateFill: $("savingRateFill"),
+  savingRateNote: $("savingRateNote"),
 };
+
+let pieRangeMode = "month"; // month | all
 
 const APP_URL = "https://tridpt.github.io/money-mom/";
 
@@ -95,6 +126,10 @@ function load() {
     if (raw) {
       const parsed = JSON.parse(raw);
       state = { ...state, ...parsed, ui: { ...state.ui, ...(parsed.ui || {}) } };
+      // Migration: khoản chi cũ chưa có danh mục -> "other"
+      state.transactions.forEach((t) => {
+        if (t.type === "expense" && !t.category) t.category = "other";
+      });
     }
   } catch (e) {
     console.warn("Không đọc được dữ liệu cũ:", e);
@@ -244,12 +279,15 @@ function renderHistory() {
       " " + date.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
     const tag = t.type === "expense" ? (t.essential ? " · Thiết yếu" : " · Không thiết yếu") : "";
     const sign = t.type === "income" ? "+" : "-";
+    const cat = t.type === "expense" ? getCat(t.category) : null;
+    const icon = cat ? cat.icon : TYPE_ICON[t.type];
+    const metaLabel = cat ? cat.label : TYPE_LABEL[t.type];
 
     li.innerHTML = `
-      <span class="item-icon">${TYPE_ICON[t.type]}</span>
+      <span class="item-icon">${icon}</span>
       <div class="item-body">
-        <div class="item-note">${escapeHtml(t.note || TYPE_LABEL[t.type])}</div>
-        <div class="item-meta">${TYPE_LABEL[t.type]}${tag} · ${dateStr}</div>
+        <div class="item-note">${escapeHtml(t.note || metaLabel)}</div>
+        <div class="item-meta">${metaLabel}${tag} · ${dateStr}</div>
       </div>
       <span class="item-amount ${t.type}">${sign}${formatVND(t.amount)}</span>
       <button class="item-del" data-id="${t.id}" title="Xóa">✕</button>
@@ -362,6 +400,7 @@ function addTransaction() {
     amount,
     note,
     essential: state.ui.type === "expense" ? state.ui.essential : false,
+    category: state.ui.type === "expense" ? state.ui.category : null,
     ts: Date.now(),
   };
 
@@ -370,6 +409,7 @@ function addTransaction() {
   renderStats();
   renderHistory();
   renderBudget();
+  renderAnalytics();
   reactTo(t);
 
   // Reset form
@@ -384,6 +424,7 @@ function deleteTransaction(id) {
   renderStats();
   renderHistory();
   renderBudget();
+  renderAnalytics();
 }
 
 function clearAll() {
@@ -394,7 +435,29 @@ function clearAll() {
   renderStats();
   renderHistory();
   renderBudget();
+  renderAnalytics();
   speak("Xóa sạch rồi. Coi như mẹ tha cho con lần này. Làm lại từ đầu nha.", "praise");
+}
+
+function renderCategoryGrid() {
+  el.categoryGrid.innerHTML = "";
+  for (const c of CATEGORIES) {
+    const btn = document.createElement("button");
+    btn.className = "cat-btn" + (c.id === state.ui.category ? " active" : "");
+    btn.dataset.cat = c.id;
+    btn.innerHTML = `<span class="cat-emoji">${c.icon}</span>${c.label}`;
+    el.categoryGrid.appendChild(btn);
+  }
+}
+
+function setCategory(id) {
+  state.ui.category = id;
+  document.querySelectorAll(".cat-btn").forEach((b) => {
+    b.classList.toggle("active", b.dataset.cat === id);
+  });
+  // Tự đặt mức thiết yếu theo danh mục (vẫn cho phép chỉnh tay sau đó)
+  setEssential(getCat(id).essential);
+  save();
 }
 
 function setType(type) {
@@ -404,6 +467,7 @@ function setType(type) {
   });
   // Chỉ hiện toggle thiết yếu khi là chi tiêu
   el.essentialField.style.display = type === "expense" ? "" : "none";
+  el.categoryField.style.display = type === "expense" ? "" : "none";
   // Đổi placeholder gợi ý
   const hints = {
     expense: "VD: Mua cốc trà sữa",
@@ -600,6 +664,223 @@ function toggleSound() {
   if (state.soundOn) playSound("praise");
 }
 
+// ---- Biểu đồ & phân tích ----
+function formatShort(n) {
+  if (n >= 1e9) return (n / 1e9).toFixed(1).replace(/\.0$/, "") + " tỷ";
+  if (n >= 1e6) return (n / 1e6).toFixed(1).replace(/\.0$/, "") + " tr";
+  if (n >= 1e3) return Math.round(n / 1e3) + "k";
+  return String(Math.round(n));
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  r = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function monthSum(type, y, m) {
+  let s = 0;
+  for (const t of state.transactions) {
+    if (t.type !== type) continue;
+    const d = new Date(t.ts);
+    if (d.getFullYear() === y && d.getMonth() === m) s += t.amount;
+  }
+  return s;
+}
+
+function drawPie(canvas, segments) {
+  const ctx = canvas.getContext("2d");
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+  const total = segments.reduce((s, x) => s + x.value, 0);
+  if (total <= 0) return;
+  const cx = W / 2, cy = H / 2;
+  const r = Math.min(W, H) / 2 - 8;
+  const rInner = r * 0.58;
+  let start = -Math.PI / 2;
+  for (const seg of segments) {
+    const angle = (seg.value / total) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, r, start, start + angle);
+    ctx.closePath();
+    ctx.fillStyle = seg.color;
+    ctx.fill();
+    start += angle;
+  }
+  // Lỗ giữa (donut)
+  ctx.beginPath();
+  ctx.arc(cx, cy, rInner, 0, Math.PI * 2);
+  ctx.fillStyle = "#1c1d33";
+  ctx.fill();
+  // Chữ giữa
+  ctx.fillStyle = "#ecedf7";
+  ctx.textAlign = "center";
+  ctx.font = "700 30px 'Be Vietnam Pro', sans-serif";
+  ctx.fillText(formatShort(total), cx, cy + 4);
+  ctx.fillStyle = "#9a9bc0";
+  ctx.font = "500 16px 'Be Vietnam Pro', sans-serif";
+  ctx.fillText("Tổng chi", cx, cy + 30);
+}
+
+function drawBar(canvas, items) {
+  const ctx = canvas.getContext("2d");
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+  const padL = 14, padR = 14, padTop = 28, padBottom = 36;
+  const chartW = W - padL - padR;
+  const chartH = H - padTop - padBottom;
+  const max = Math.max(...items.map((i) => i.value), 1);
+  const n = items.length;
+  const slot = chartW / n;
+  const barW = Math.min(slot * 0.55, 70);
+  items.forEach((it, i) => {
+    const x = padL + i * slot + (slot - barW) / 2;
+    const h = (it.value / max) * chartH;
+    const y = padTop + chartH - h;
+    if (it.value > 0) {
+      const grad = ctx.createLinearGradient(0, y, 0, y + h);
+      grad.addColorStop(0, "#7c5cff");
+      grad.addColorStop(1, "#ff5d8f");
+      ctx.fillStyle = grad;
+      roundRect(ctx, x, y, barW, Math.max(h, 2), 6);
+      ctx.fill();
+      ctx.fillStyle = "#ecedf7";
+      ctx.font = "600 15px 'Be Vietnam Pro', sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(formatShort(it.value), x + barW / 2, y - 8);
+    }
+    ctx.fillStyle = "#9a9bc0";
+    ctx.font = "500 15px 'Be Vietnam Pro', sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(it.label, x + barW / 2, H - 12);
+  });
+}
+
+function renderPie() {
+  const now = new Date();
+  const cm = now.getMonth(), cy = now.getFullYear();
+  const totals = {};
+  for (const t of state.transactions) {
+    if (t.type !== "expense") continue;
+    if (pieRangeMode === "month") {
+      const d = new Date(t.ts);
+      if (d.getMonth() !== cm || d.getFullYear() !== cy) continue;
+    }
+    const cid = t.category || "other";
+    totals[cid] = (totals[cid] || 0) + t.amount;
+  }
+  const segments = CATEGORIES
+    .map((c) => ({ label: c.label, value: totals[c.id] || 0, color: c.color, icon: c.icon }))
+    .filter((s) => s.value > 0)
+    .sort((a, b) => b.value - a.value);
+  const total = segments.reduce((s, x) => s + x.value, 0);
+
+  if (total <= 0) {
+    el.pieEmpty.classList.add("show");
+    el.pieChart.style.display = "none";
+    el.pieLegend.innerHTML = "";
+    return;
+  }
+  el.pieEmpty.classList.remove("show");
+  el.pieChart.style.display = "";
+  drawPie(el.pieChart, segments);
+
+  el.pieLegend.innerHTML = "";
+  for (const s of segments) {
+    const pct = Math.round((s.value / total) * 100);
+    const li = document.createElement("li");
+    li.innerHTML = `<span class="legend-dot" style="background:${s.color}"></span>
+      <span class="legend-label">${s.icon} ${s.label}</span>
+      <span class="legend-pct">${pct}% · ${formatShort(s.value)}</span>`;
+    el.pieLegend.appendChild(li);
+  }
+}
+
+function renderBar() {
+  const now = new Date();
+  const months = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push({ y: d.getFullYear(), m: d.getMonth(), label: "T" + (d.getMonth() + 1), value: 0 });
+  }
+  for (const t of state.transactions) {
+    if (t.type !== "expense") continue;
+    const d = new Date(t.ts);
+    const slot = months.find((x) => x.y === d.getFullYear() && x.m === d.getMonth());
+    if (slot) slot.value += t.amount;
+  }
+  const hasData = months.some((x) => x.value > 0);
+  if (!hasData) {
+    el.barEmpty.classList.add("show");
+    el.barChart.style.display = "none";
+    return;
+  }
+  el.barEmpty.classList.remove("show");
+  el.barChart.style.display = "";
+  drawBar(el.barChart, months.map((x) => ({ label: x.label, value: x.value })));
+}
+
+function renderCompare() {
+  const now = new Date();
+  const thisM = monthSum("expense", now.getFullYear(), now.getMonth());
+  const last = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const lastM = monthSum("expense", last.getFullYear(), last.getMonth());
+  const savingThis = monthSum("saving", now.getFullYear(), now.getMonth());
+  const incomeThis = monthSum("income", now.getFullYear(), now.getMonth());
+
+  let deltaClass = "flat", deltaText;
+  if (lastM === 0) {
+    deltaText = thisM > 0 ? "Tháng trước chưa tiêu gì" : "Chưa có dữ liệu";
+  } else {
+    const deltaPct = Math.round(((thisM - lastM) / lastM) * 100);
+    if (deltaPct > 0) { deltaClass = "up"; deltaText = `▲ ${deltaPct}% so tháng trước`; }
+    else if (deltaPct < 0) { deltaClass = "down"; deltaText = `▼ ${Math.abs(deltaPct)}% so tháng trước`; }
+    else { deltaText = "Bằng tháng trước"; }
+  }
+
+  el.compareStats.innerHTML = `
+    <div class="compare-item">
+      <div class="ci-label">Chi tháng này</div>
+      <div class="ci-value">${formatVND(thisM)}</div>
+      <div class="ci-delta ${deltaClass}">${deltaText}</div>
+    </div>
+    <div class="compare-item">
+      <div class="ci-label">Chi tháng trước</div>
+      <div class="ci-value">${formatVND(lastM)}</div>
+      <div class="ci-delta flat">&nbsp;</div>
+    </div>
+    <div class="compare-item">
+      <div class="ci-label">Bỏ heo tháng này</div>
+      <div class="ci-value">${formatVND(savingThis)}</div>
+      <div class="ci-delta flat">&nbsp;</div>
+    </div>`;
+
+  const moneyIn = state.salary + incomeThis;
+  const rate = moneyIn > 0 ? Math.round((savingThis / moneyIn) * 100) : 0;
+  el.savingRateValue.textContent = rate + "%";
+  el.savingRateFill.style.width = Math.min(Math.max(rate, 0), 100) + "%";
+
+  let note;
+  if (moneyIn <= 0) note = "Khai báo lương để mẹ tính tỷ lệ tiết kiệm cho con.";
+  else if (rate >= 30) note = "Giỏi! Tiết kiệm hơn 30% rồi đấy. Mẹ tự hào (chút thôi).";
+  else if (rate >= 10) note = "Tạm được, nhưng ráng lên 20-30% nữa đi con.";
+  else if (rate > 0) note = "Tiết kiệm tí xíu vậy thôi à? Mẹ buồn ghê.";
+  else note = "Tháng này chưa bỏ đồng nào vào heo. Định cạp đất hả con?";
+  el.savingRateNote.textContent = note;
+}
+
+function renderAnalytics() {
+  renderPie();
+  renderBar();
+  renderCompare();
+}
+
 // ---- Events ----
 function bindEvents() {
   el.addBtn.addEventListener("click", addTransaction);
@@ -633,6 +914,23 @@ function bindEvents() {
   el.essentialToggle.addEventListener("click", (e) => {
     const btn = e.target.closest(".ess-btn");
     if (btn) setEssential(btn.dataset.essential === "true");
+  });
+
+  // Danh mục
+  el.categoryGrid.addEventListener("click", (e) => {
+    const btn = e.target.closest(".cat-btn");
+    if (btn) setCategory(btn.dataset.cat);
+  });
+
+  // Tab phạm vi biểu đồ tròn
+  el.pieRange.addEventListener("click", (e) => {
+    const btn = e.target.closest(".range-tab");
+    if (!btn) return;
+    pieRangeMode = btn.dataset.range;
+    document.querySelectorAll("#pieRange .range-tab").forEach((b) => {
+      b.classList.toggle("active", b.dataset.range === pieRangeMode);
+    });
+    renderPie();
   });
 
   el.historyList.addEventListener("click", (e) => {
@@ -675,6 +973,8 @@ function init() {
   renderStats();
   renderHistory();
   renderBudget();
+  renderCategoryGrid();
+  renderAnalytics();
   setType(state.ui.type);
   setEssential(state.ui.essential);
   // Khôi phục trạng thái âm thanh

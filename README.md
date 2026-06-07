@@ -14,6 +14,9 @@ Thay vì những biểu đồ thu chi khô khan, Money Mom quản lý ví tiền
 - 💔 **2 tính cách**: Mẹ nghiêm khắc & Người yêu cũ thực dụng.
 - 💼 **Khai báo lương tháng** để được "so sánh" cho thấm.
 - 🎯 **Hạn mức chi tiêu tháng** + thanh tiến độ — vượt ngân sách là mẹ "nổi điên".
+- 🥧 **Biểu đồ tròn**: xem tiền đi đâu nhiều nhất theo danh mục (ăn uống, mua sắm, đi lại...).
+- 📊 **Biểu đồ cột**: so sánh chi tiêu 6 tháng gần đây.
+- 📈 **So sánh tháng này vs tháng trước** + tỷ lệ tiết kiệm.
 - 🔊 **Âm thanh phản ứng** — tiếng báo lỗi khi bị mắng, nhạc vui khi tiết kiệm.
 - 📸 **Khoe "thành tích bị mắng"** — tạo ảnh chia sẻ lên Facebook / X / Threads.
 - 📒 **Sổ chi tiêu** + theo dõi số dư, tổng thu/chi/heo đất.
@@ -48,8 +51,8 @@ Vanilla HTML/CSS/JavaScript. Không framework, không dependency.
 
 ## 💡 Ý tưởng phát triển
 
-- Phân loại chi tiêu theo danh mục (ăn uống, mua sắm, đi lại...)
-- Biểu đồ tiền đi đâu nhiều nhất
+- Mục tiêu tiết kiệm ("để dành 10 triệu mua iPhone") + thanh tiến độ
+- Chi tiêu định kỳ tự nhắc hằng tháng
 - Thêm tính cách mới (sếp keo kiệt, bà hàng xóm...)
 - AI sinh câu mắng sáng tạo theo từng khoản chi
 - PWA: cài như app trên điện thoại, chạy offline
