@@ -19,9 +19,12 @@
           <p class="tagline">Tiêu hoang là bị mắng. Tiết kiệm thì... cũng bị nói.</p>
         </div>
       </div>
-      <button id="moodBtn" class="mood-btn" title="Đổi tính cách">
-        <span id="moodLabel">😤 Mẹ nghiêm khắc</span>
-      </button>
+      <div class="topbar-actions">
+        <button id="soundBtn" class="icon-btn" title="Bật/tắt âm thanh">🔊</button>
+        <button id="moodBtn" class="mood-btn" title="Đổi tính cách">
+          <span id="moodLabel">😤 Mẹ nghiêm khắc</span>
+        </button>
+      </div>
     </header>
 
     <main class="layout">
@@ -33,6 +36,7 @@
             <p id="momMessage">Tiền đâu? Khai báo chi tiêu ngay, để mẹ còn liệu mà la...</p>
           </div>
         </div>
+        <button id="shareBtn" class="share-trigger" title="Khoe lời mẹ phán">📸 Khoe lời mẹ phán</button>
 
         <div class="stats">
           <div class="stat-card balance">
@@ -62,6 +66,18 @@
             <button id="saveSalaryBtn">Lưu</button>
           </div>
           <p class="salary-hint" id="salaryHint">Mẹ cần biết lương để còn so sánh với mức tiêu của bạn.</p>
+        </div>
+
+        <div class="budget-box">
+          <label for="budgetInput">🎯 Hạn mức chi tiêu tháng này</label>
+          <div class="salary-input-row">
+            <input type="text" id="budgetInput" inputmode="numeric" placeholder="VD: 3.000.000" />
+            <button id="saveBudgetBtn">Lưu</button>
+          </div>
+          <div class="budget-progress" id="budgetProgress" style="display:none;">
+            <div class="budget-bar"><div class="budget-bar-fill" id="budgetBarFill"></div></div>
+            <p class="budget-status" id="budgetStatus"></p>
+          </div>
         </div>
       </section>
 
@@ -116,6 +132,27 @@
 
   <!-- Toast for mom reaction -->
   <div class="toast" id="toast"></div>
+
+  <!-- Share modal -->
+  <div class="modal-overlay" id="shareModal">
+    <div class="modal">
+      <button class="modal-close" id="shareClose" title="Đóng">✕</button>
+      <h3>Khoe "thành tích" bị mẹ phán 📸</h3>
+      <div class="share-preview">
+        <canvas id="shareCanvas" width="1000" height="1000"></canvas>
+      </div>
+      <div class="share-actions">
+        <button id="shareNative" class="share-act primary">📤 Chia sẻ ngay</button>
+        <button id="shareDownload" class="share-act">⬇️ Tải ảnh</button>
+        <button id="shareCopy" class="share-act">📋 Copy caption</button>
+      </div>
+      <div class="share-social">
+        <a id="shareFb" class="social-link fb" target="_blank" rel="noopener">f Facebook</a>
+        <a id="shareTw" class="social-link tw" target="_blank" rel="noopener">𝕏 / Twitter</a>
+        <a id="shareThreads" class="social-link th" target="_blank" rel="noopener">@ Threads</a>
+      </div>
+    </div>
+  </div>
 
   <script src="messages.js"></script>
   <script src="app.js"></script>
