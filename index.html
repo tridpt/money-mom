@@ -96,6 +96,39 @@
           </div>
         </div>
 
+        <div class="goal-box">
+          <label>🏆 Mục tiêu tiết kiệm</label>
+          <div class="goal-inputs">
+            <input type="text" id="goalName" placeholder="VD: Mua iPhone" autocomplete="off" />
+            <input type="text" id="goalTarget" inputmode="numeric" placeholder="VD: 10.000.000" />
+            <button id="saveGoalBtn">Lưu</button>
+          </div>
+          <div class="goal-progress" id="goalProgress" style="display:none;">
+            <div class="budget-bar"><div class="budget-bar-fill goal-fill" id="goalBarFill"></div></div>
+            <p class="budget-status" id="goalStatus"></p>
+          </div>
+        </div>
+
+        <details class="settings-box" id="catBudgetBox">
+          <summary>🎯 Hạn mức theo từng danh mục</summary>
+          <div class="catbudget-body" id="catBudgetBody"></div>
+        </details>
+
+        <details class="settings-box" id="currencyBox">
+          <summary>💱 Đơn vị tiền tệ</summary>
+          <div class="settings-body">
+            <select id="currencySelect">
+              <option value="VND">₫ VND - Việt Nam Đồng</option>
+              <option value="USD">$ USD - US Dollar</option>
+              <option value="EUR">€ EUR - Euro</option>
+              <option value="JPY">¥ JPY - Yên Nhật</option>
+              <option value="KRW">₩ KRW - Won Hàn</option>
+              <option value="GBP">£ GBP - Bảng Anh</option>
+            </select>
+            <p class="settings-note">Chỉ đổi ký hiệu &amp; cách hiển thị, không quy đổi tỷ giá.</p>
+          </div>
+        </details>
+
         <details class="ai-box" id="aiBox">
           <summary>🤖 Chế độ AI — để mẹ chửi sáng tạo</summary>
           <div class="ai-body">
@@ -150,10 +183,36 @@
           <button id="addBtn" class="add-btn">Ghi sổ & nghe mẹ phán 👂</button>
         </div>
 
+        <details class="recurring-card" id="recurringBox">
+          <summary>🔁 Chi tiêu định kỳ (tiền nhà, internet...)</summary>
+          <div class="recurring-body">
+            <p class="settings-note">Khai báo khoản cố định hằng tháng. Mỗi tháng mẹ sẽ nhắc và ghi giúp con.</p>
+            <div class="recurring-form">
+              <input type="text" id="recName" placeholder="Tên (VD: Tiền nhà)" autocomplete="off" />
+              <input type="text" id="recAmount" inputmode="numeric" placeholder="Số tiền" />
+              <input type="number" id="recDay" min="1" max="28" placeholder="Ngày" title="Ngày trong tháng (1-28)" />
+              <button id="addRecBtn">Thêm</button>
+            </div>
+            <ul class="recurring-list" id="recurringList"></ul>
+          </div>
+        </details>
+
         <div class="history-card">
           <div class="history-head">
             <h2>Sổ chi tiêu</h2>
             <button id="clearBtn" class="clear-btn" title="Xóa hết">🗑️ Xóa hết</button>
+          </div>
+          <div class="history-filters">
+            <input type="text" id="searchInput" placeholder="🔍 Tìm theo ghi chú..." autocomplete="off" />
+            <select id="filterType">
+              <option value="all">Tất cả loại</option>
+              <option value="expense">🛍️ Chi tiêu</option>
+              <option value="income">💰 Thu nhập</option>
+              <option value="saving">🐷 Tiết kiệm</option>
+            </select>
+            <select id="filterCategory">
+              <option value="all">Mọi danh mục</option>
+            </select>
           </div>
           <ul id="historyList" class="history-list">
             <li class="empty-state" id="emptyState">Chưa có gì cả. Hôm nay ngoan thế? 🤨</li>
@@ -255,6 +314,34 @@
 
   <!-- Confetti -->
   <canvas id="confettiCanvas" class="confetti-canvas"></canvas>
+
+  <!-- Edit transaction modal -->
+  <div class="modal-overlay" id="editModal">
+    <div class="modal">
+      <button class="modal-close" id="editClose" title="Đóng">✕</button>
+      <h3>Sửa khoản này ✏️</h3>
+      <div class="field">
+        <label for="editAmount">Số tiền</label>
+        <input type="text" id="editAmount" inputmode="numeric" autocomplete="off" />
+      </div>
+      <div class="field">
+        <label for="editNote">Ghi chú</label>
+        <input type="text" id="editNote" autocomplete="off" />
+      </div>
+      <div class="field" id="editCategoryField">
+        <label>Danh mục</label>
+        <div class="category-grid" id="editCategoryGrid"></div>
+      </div>
+      <div class="field" id="editEssentialField">
+        <label>Thiết yếu?</label>
+        <div class="essential-toggle" id="editEssentialToggle">
+          <button class="ess-btn" data-essential="false">😋 Không</button>
+          <button class="ess-btn" data-essential="true">🧾 Có</button>
+        </div>
+      </div>
+      <button id="editSaveBtn" class="add-btn">Lưu thay đổi</button>
+    </div>
+  </div>
 
   <script src="messages.js"></script>
   <script src="app.js"></script>

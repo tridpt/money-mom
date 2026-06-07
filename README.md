@@ -19,6 +19,12 @@ Thay vì những biểu đồ thu chi khô khan, Money Mom quản lý ví tiền
 - 📲 **PWA**: cài lên màn hình điện thoại như app thật, có icon, chạy offline.
 - 🌗 **Giao diện sáng/tối** + màn hình hướng dẫn lần đầu (onboarding).
 - 🎉 **Hiệu ứng confetti** khi mở khóa huy hiệu.
+- 🏁 **Mục tiêu tiết kiệm**: đặt mục tiêu + thanh tiến độ, đạt là confetti ăn mừng.
+- 🔁 **Chi tiêu định kỳ**: khai báo tiền nhà, internet... mỗi tháng được nhắc và ghi một chạm.
+- 🔍 **Lọc & tìm kiếm** sổ chi tiêu theo loại, danh mục, ghi chú.
+- ✏️ **Sửa giao dịch** đã ghi.
+- 🎯 **Hạn mức theo từng danh mục** (vd: ăn uống tối đa 2 triệu/tháng).
+- 💱 **Đổi đơn vị tiền tệ** (VND, USD, EUR, JPY, KRW, GBP).
 - 💼 **Khai báo lương tháng** để được "so sánh" cho thấm.
 - 🎯 **Hạn mức chi tiêu tháng** + thanh tiến độ — vượt ngân sách là mẹ "nổi điên".
 - 🥧 **Biểu đồ tròn**: xem tiền đi đâu nhiều nhất theo danh mục (ăn uống, mua sắm, đi lại...).
@@ -61,10 +67,10 @@ Vanilla HTML/CSS/JavaScript. Không framework, không dependency.
 
 ## 💡 Ý tưởng phát triển
 
-- Mục tiêu tiết kiệm ("để dành 10 triệu mua iPhone") + thanh tiến độ
-- Chi tiêu định kỳ tự nhắc hằng tháng
-- Lọc & tìm kiếm, sửa giao dịch
 - Xuất / nhập dữ liệu (JSON/CSV) để backup
+- Tổng kết cuối tháng tự động kèm lời mẹ phán
+- Text-to-speech: đọc to câu mắng
+- Đa ngôn ngữ (thêm tiếng Anh)
 
 ## 📄 License
 

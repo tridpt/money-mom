@@ -11,6 +11,10 @@ let state = {
   soundOn: true,
   theme: "dark",        // dark | light
   onboardingDone: false,
+  currency: "VND",
+  goal: { name: "", target: 0 },     // mục tiêu tiết kiệm
+  catBudgets: {},                    // hạn mức theo danh mục { catId: số }
+  recurring: [],                     // chi tiêu định kỳ [{id, name, amount, category, day, lastApplied}]
   mood: "mom", // mom | ex | boss | neighbor | dad
   combo: 0,        // số lần tiêu hoang liên tiếp
   maxCombo: 0,     // combo cao nhất từng đạt
@@ -122,15 +126,62 @@ const el = {
   onboardSkip: $("onboardSkip"),
   onboardNext: $("onboardNext"),
   confettiCanvas: $("confettiCanvas"),
+  // Mới: mục tiêu tiết kiệm
+  goalName: $("goalName"),
+  goalTarget: $("goalTarget"),
+  saveGoalBtn: $("saveGoalBtn"),
+  goalProgress: $("goalProgress"),
+  goalBarFill: $("goalBarFill"),
+  goalStatus: $("goalStatus"),
+  // Mới: hạn mức danh mục & tiền tệ
+  catBudgetBody: $("catBudgetBody"),
+  currencySelect: $("currencySelect"),
+  // Mới: chi tiêu định kỳ
+  recName: $("recName"),
+  recAmount: $("recAmount"),
+  recDay: $("recDay"),
+  addRecBtn: $("addRecBtn"),
+  recurringList: $("recurringList"),
+  // Mới: lọc & tìm kiếm
+  searchInput: $("searchInput"),
+  filterType: $("filterType"),
+  filterCategory: $("filterCategory"),
+  // Mới: sửa giao dịch
+  editModal: $("editModal"),
+  editClose: $("editClose"),
+  editAmount: $("editAmount"),
+  editNote: $("editNote"),
+  editCategoryField: $("editCategoryField"),
+  editCategoryGrid: $("editCategoryGrid"),
+  editEssentialField: $("editEssentialField"),
+  editEssentialToggle: $("editEssentialToggle"),
+  editSaveBtn: $("editSaveBtn"),
 };
+
+// Trạng thái bộ lọc & sửa
+let filters = { search: "", type: "all", category: "all" };
+let editing = { id: null, category: "food", essential: false };
 
 let pieRangeMode = "month"; // month | all
 
 const APP_URL = "https://tridpt.github.io/money-mom/";
 
 // ---- Helpers ----
+const CURRENCIES = {
+  VND: { symbol: "₫", locale: "vi-VN", prefix: false },
+  USD: { symbol: "$", locale: "en-US", prefix: true },
+  EUR: { symbol: "€", locale: "de-DE", prefix: false },
+  JPY: { symbol: "¥", locale: "ja-JP", prefix: true },
+  KRW: { symbol: "₩", locale: "ko-KR", prefix: true },
+  GBP: { symbol: "£", locale: "en-GB", prefix: true },
+};
+
+function curCfg() { return CURRENCIES[state.currency] || CURRENCIES.VND; }
+
 function formatVND(n) {
-  return new Intl.NumberFormat("vi-VN").format(Math.round(n)) + "₫";
+  const c = curCfg();
+  const num = new Intl.NumberFormat(c.locale).format(Math.round(n));
+  return c.prefix ? c.symbol + num : num + c.symbol;
 }
 
 // Lấy số từ chuỗi có dấu phân cách (vd "60.000" -> 60000)
@@ -291,15 +342,24 @@ const TYPE_LABEL = { expense: "Chi tiêu", income: "Thu nhập", saving: "Tiết
 
 function renderHistory() {
   el.historyList.innerHTML = "";
-  if (state.transactions.length === 0) {
+  // Áp bộ lọc
+  let list = state.transactions.filter((t) => {
+    if (filters.type !== "all" && t.type !== filters.type) return false;
+    if (filters.category !== "all" && (t.category || "") !== filters.category) return false;
+    if (filters.search && !(t.note || "").toLowerCase().includes(filters.search.toLowerCase())) return false;
+    return true;
+  });
+
+  if (list.length === 0) {
     const li = document.createElement("li");
     li.className = "empty-state";
-    li.textContent = "Chưa có gì cả. Hôm nay ngoan thế? 🤨";
+    const hasAny = state.transactions.length > 0;
+    li.textContent = hasAny ? "Không tìm thấy khoản nào khớp bộ lọc. 🔍" : "Chưa có gì cả. Hôm nay ngoan thế? 🤨";
     el.historyList.appendChild(li);
     return;
   }
   // Mới nhất lên đầu
-  const sorted = [...state.transactions].sort((a, b) => b.ts - a.ts);
+  const sorted = list.sort((a, b) => b.ts - a.ts);
   for (const t of sorted) {
     const li = document.createElement("li");
     li.className = "history-item";
@@ -319,6 +379,7 @@ function renderHistory() {
         <div class="item-meta">${metaLabel}${tag} · ${dateStr}</div>
       </div>
       <span class="item-amount ${t.type}">${sign}${formatVND(t.amount)}</span>
+      <button class="item-edit" data-id="${t.id}" title="Sửa">✏️</button>
       <button class="item-del" data-id="${t.id}" title="Xóa">✕</button>
     `;
     el.historyList.appendChild(li);
@@ -404,6 +465,13 @@ function reactTo(transaction) {
         sound = "over";
       }
     }
+    // Vượt hạn mức riêng của danh mục
+    const cb = state.catBudgets[transaction.category];
+    if (cb > 0 && catMonthSpent(transaction.category, new Date()) > cb) {
+      text += ` Riêng khoản ${getCat(transaction.category).label} cũng vượt hạn mức tháng này rồi đấy!`;
+      tone = "scold";
+      sound = "over";
+    }
   }
 
   lastReaction = { text, tone, mood: state.mood };
@@ -463,8 +531,22 @@ function addTransaction() {
   renderBudget();
   renderAnalytics();
   renderStreakCombo();
+  renderGoal();
+  renderCatBudgets();
   reactTo(t);
   checkAchievements();
+
+  // Đạt mục tiêu tiết kiệm -> ăn mừng
+  if (t.type === "saving" && state.goal.target > 0) {
+    const saved = getTotalSaving();
+    if (saved >= state.goal.target && saved - t.amount < state.goal.target) {
+      setTimeout(() => {
+        showToast(`🎉 Đạt mục tiêu "${state.goal.name || "tiết kiệm"}"! Quá giỏi luôn con!`, "praise");
+        playSound("praise");
+        fireConfetti();
+      }, 800);
+    }
+  }
 
   // Reset form
   el.amountInput.value = "";
@@ -480,6 +562,8 @@ function deleteTransaction(id) {
   renderBudget();
   renderAnalytics();
   renderStreakCombo();
+  renderGoal();
+  renderCatBudgets();
 }
 
 function clearAll() {
@@ -493,6 +577,8 @@ function clearAll() {
   renderBudget();
   renderAnalytics();
   renderStreakCombo();
+  renderGoal();
+  renderCatBudgets();
   speak("Xóa sạch rồi. Coi như mẹ tha cho con lần này. Làm lại từ đầu nha.", "praise");
 }
 
@@ -1105,6 +1191,239 @@ async function generateAIScold(transaction, tone) {
   }
 }
 
+// ---- Mục tiêu tiết kiệm ----
+function getTotalSaving() {
+  return state.transactions.filter((t) => t.type === "saving").reduce((s, t) => s + t.amount, 0);
+}
+
+function saveGoal() {
+  state.goal.name = el.goalName.value.trim();
+  state.goal.target = parseAmount(el.goalTarget.value);
+  save();
+  renderGoal();
+  if (state.goal.target > 0) {
+    el.goalTarget.value = new Intl.NumberFormat("vi-VN").format(state.goal.target);
+    speak(`Mục tiêu "${state.goal.name || "để dành"}": ${formatVND(state.goal.target)}. Cố mà bỏ heo cho đủ nha con!`, null);
+  }
+}
+
+function renderGoal() {
+  if (!state.goal.target || state.goal.target <= 0) {
+    el.goalProgress.style.display = "none";
+    return;
+  }
+  const saved = getTotalSaving();
+  const ratio = saved / state.goal.target;
+  const pct = Math.min(ratio * 100, 100);
+  el.goalProgress.style.display = "";
+  el.goalBarFill.style.width = pct + "%";
+  el.goalBarFill.classList.toggle("done", ratio >= 1);
+  const name = state.goal.name || "mục tiêu";
+  if (ratio >= 1) {
+    el.goalStatus.textContent = `🎉 Đạt mục tiêu "${name}"! Đã bỏ ${formatVND(saved)}. Mẹ tự hào ghê!`;
+  } else {
+    el.goalStatus.textContent = `"${name}": ${formatVND(saved)} / ${formatVND(state.goal.target)} (${Math.round(pct)}%) · còn thiếu ${formatVND(state.goal.target - saved)}.`;
+  }
+}
+
+// ---- Hạn mức theo danh mục ----
+function catMonthSpent(catId, date) {
+  let s = 0;
+  for (const t of state.transactions) {
+    if (t.type !== "expense" || (t.category || "") !== catId) continue;
+    const d = new Date(t.ts);
+    if (d.getMonth() === date.getMonth() && d.getFullYear() === date.getFullYear()) s += t.amount;
+  }
+  return s;
+}
+
+function renderCatBudgets() {
+  el.catBudgetBody.innerHTML = "";
+  const now = new Date();
+  for (const c of CATEGORIES) {
+    const limit = state.catBudgets[c.id] || 0;
+    const used = catMonthSpent(c.id, now);
+    const over = limit > 0 && used > limit;
+    const row = document.createElement("div");
+    row.className = "catbudget-row" + (over ? " over" : "");
+    const usedText = limit > 0
+      ? `Đã tiêu ${formatVND(used)} / ${formatVND(limit)}${over ? " — VƯỢT!" : ""}`
+      : (used > 0 ? `Đã tiêu ${formatVND(used)} (chưa đặt hạn mức)` : "");
+    row.innerHTML = `
+      <span class="cb-icon">${c.icon}</span>
+      <span class="cb-label">${c.label}</span>
+      <input type="text" inputmode="numeric" data-cat="${c.id}" value="${limit ? new Intl.NumberFormat("vi-VN").format(limit) : ""}" placeholder="Không giới hạn" />
+      <div class="cb-used">${usedText}</div>`;
+    el.catBudgetBody.appendChild(row);
+  }
+}
+
+// ---- Tiền tệ ----
+function setCurrency(cur) {
+  if (!CURRENCIES[cur]) return;
+  state.currency = cur;
+  save();
+  el.currencySelect.value = cur;
+  renderStats();
+  renderHistory();
+  renderBudget();
+  renderAnalytics();
+  renderGoal();
+  renderCatBudgets();
+  renderRecurring();
+}
+
+// ---- Chi tiêu định kỳ ----
+function monthKey(d) { return d.getFullYear() + "-" + d.getMonth(); }
+
+function addRecurring() {
+  const name = el.recName.value.trim();
+  const amount = parseAmount(el.recAmount.value);
+  let day = parseInt(el.recDay.value, 10) || 1;
+  day = Math.min(Math.max(day, 1), 28);
+  if (!name || amount <= 0) {
+    speak("Nhập tên và số tiền cho khoản định kỳ đã con.", "scold");
+    return;
+  }
+  state.recurring.push({
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
+    name, amount, category: "bills", day, lastApplied: null,
+  });
+  save();
+  renderRecurring();
+  el.recName.value = ""; el.recAmount.value = ""; el.recDay.value = "";
+}
+
+function deleteRecurring(id) {
+  state.recurring = state.recurring.filter((r) => r.id !== id);
+  save();
+  renderRecurring();
+}
+
+function applyRecurring(id) {
+  const r = state.recurring.find((x) => x.id === id);
+  if (!r) return;
+  const now = new Date();
+  const mk = monthKey(now);
+  if (r.lastApplied === mk) return;
+  const ts = new Date(now.getFullYear(), now.getMonth(), Math.min(r.day, 28), 9, 0, 0).getTime();
+  state.transactions.push({
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    type: "expense", amount: r.amount, note: r.name + " (định kỳ)",
+    essential: true, category: r.category || "bills", ts,
+  });
+  r.lastApplied = mk;
+  state.combo = 0;
+  save();
+  renderStats(); renderHistory(); renderBudget(); renderAnalytics();
+  renderGoal(); renderCatBudgets(); renderRecurring(); renderStreakCombo();
+  speak(`Đã ghi khoản định kỳ "${r.name}" ${formatVND(r.amount)} cho tháng này.`, null);
+  checkAchievements();
+}
+
+function renderRecurring() {
+  el.recurringList.innerHTML = "";
+  const mk = monthKey(new Date());
+  for (const r of state.recurring) {
+    const applied = r.lastApplied === mk;
+    const li = document.createElement("li");
+    li.className = "recurring-item" + (applied ? "" : " due");
+    li.innerHTML = `
+      <div class="rec-info">
+        <div class="rec-name">${escapeHtml(r.name)}</div>
+        <div class="rec-meta">${formatVND(r.amount)} · ngày ${r.day} hằng tháng</div>
+      </div>
+      ${applied
+        ? '<span class="rec-applied">✓ Đã ghi tháng này</span>'
+        : `<button class="rec-apply" data-id="${r.id}">Ghi tháng này</button>`}
+      <button class="rec-del" data-id="${r.id}" title="Xóa">🗑️</button>`;
+    el.recurringList.appendChild(li);
+  }
+}
+
+function remindRecurringDue() {
+  const now = new Date();
+  const mk = monthKey(now);
+  const due = state.recurring.filter((r) => r.lastApplied !== mk && now.getDate() >= r.day);
+  if (due.length > 0) {
+    setTimeout(() => {
+      showToast(`🔁 Có ${due.length} khoản định kỳ tới hạn tháng này. Vào mục "Chi tiêu định kỳ" để ghi nhé!`, null);
+    }, 1800);
+  }
+}
+
+// ---- Lọc & tìm kiếm ----
+function populateFilterCategories() {
+  // Giữ 2 option đầu, thêm danh mục
+  el.filterCategory.length = 1;
+  for (const c of CATEGORIES) {
+    const opt = document.createElement("option");
+    opt.value = c.id;
+    opt.textContent = `${c.icon} ${c.label}`;
+    el.filterCategory.appendChild(opt);
+  }
+}
+
+// ---- Sửa giao dịch ----
+function openEdit(id) {
+  const t = state.transactions.find((x) => x.id === id);
+  if (!t) return;
+  editing.id = id;
+  editing.category = t.category || "food";
+  editing.essential = !!t.essential;
+  el.editAmount.value = new Intl.NumberFormat("vi-VN").format(t.amount);
+  el.editNote.value = t.note || "";
+  const isExpense = t.type === "expense";
+  el.editCategoryField.style.display = isExpense ? "" : "none";
+  el.editEssentialField.style.display = isExpense ? "" : "none";
+  renderEditCategory();
+  renderEditEssential();
+  el.editModal.classList.add("show");
+}
+
+function renderEditCategory() {
+  el.editCategoryGrid.innerHTML = "";
+  for (const c of CATEGORIES) {
+    const btn = document.createElement("button");
+    btn.className = "cat-btn" + (c.id === editing.category ? " active" : "");
+    btn.dataset.cat = c.id;
+    btn.innerHTML = `<span class="cat-emoji">${c.icon}</span>${c.label}`;
+    el.editCategoryGrid.appendChild(btn);
+  }
+}
+
+function renderEditEssential() {
+  el.editEssentialToggle.querySelectorAll(".ess-btn").forEach((b) => {
+    b.classList.toggle("active", (b.dataset.essential === "true") === editing.essential);
+  });
+}
+
+function saveEdit() {
+  const t = state.transactions.find((x) => x.id === editing.id);
+  if (!t) return;
+  const amount = parseAmount(el.editAmount.value);
+  if (amount <= 0) {
+    alert("Số tiền phải lớn hơn 0.");
+    return;
+  }
+  t.amount = amount;
+  t.note = el.editNote.value.trim();
+  if (t.type === "expense") {
+    t.category = editing.category;
+    t.essential = editing.essential;
+  }
+  save();
+  closeEdit();
+  renderStats(); renderHistory(); renderBudget(); renderAnalytics();
+  renderGoal(); renderCatBudgets(); renderStreakCombo();
+  checkAchievements();
+}
+
+function closeEdit() {
+  el.editModal.classList.remove("show");
+  editing.id = null;
+}
+
 // ---- Theme sáng/tối ----
 function applyTheme() {
   document.documentElement.setAttribute("data-theme", state.theme);
@@ -1298,8 +1617,10 @@ function bindEvents() {
   });
 
   el.historyList.addEventListener("click", (e) => {
-    const btn = e.target.closest(".item-del");
-    if (btn) deleteTransaction(btn.dataset.id);
+    const editBtn = e.target.closest(".item-edit");
+    if (editBtn) { openEdit(editBtn.dataset.id); return; }
+    const delBtn = e.target.closest(".item-del");
+    if (delBtn) deleteTransaction(delBtn.dataset.id);
   });
 
   el.clearBtn.addEventListener("click", clearAll);
@@ -1335,6 +1656,52 @@ function bindEvents() {
   el.installBtn.addEventListener("click", doInstall);
   el.onboardNext.addEventListener("click", nextOnboard);
   el.onboardSkip.addEventListener("click", finishOnboard);
+
+  // Mục tiêu tiết kiệm
+  el.saveGoalBtn.addEventListener("click", saveGoal);
+  el.goalTarget.addEventListener("input", (e) => { e.target.value = formatNumberInput(e.target.value); });
+  el.goalTarget.addEventListener("keydown", (e) => { if (e.key === "Enter") saveGoal(); });
+
+  // Hạn mức theo danh mục
+  el.catBudgetBody.addEventListener("input", (e) => {
+    const inp = e.target.closest("input[data-cat]");
+    if (!inp) return;
+    inp.value = formatNumberInput(inp.value);
+    state.catBudgets[inp.dataset.cat] = parseAmount(inp.value);
+    save();
+  });
+
+  // Tiền tệ
+  el.currencySelect.addEventListener("change", (e) => setCurrency(e.target.value));
+
+  // Chi tiêu định kỳ
+  el.addRecBtn.addEventListener("click", addRecurring);
+  el.recAmount.addEventListener("input", (e) => { e.target.value = formatNumberInput(e.target.value); });
+  el.recurringList.addEventListener("click", (e) => {
+    const applyBtn = e.target.closest(".rec-apply");
+    if (applyBtn) { applyRecurring(applyBtn.dataset.id); return; }
+    const delBtn = e.target.closest(".rec-del");
+    if (delBtn) deleteRecurring(delBtn.dataset.id);
+  });
+
+  // Lọc & tìm kiếm
+  el.searchInput.addEventListener("input", (e) => { filters.search = e.target.value; renderHistory(); });
+  el.filterType.addEventListener("change", (e) => { filters.type = e.target.value; renderHistory(); });
+  el.filterCategory.addEventListener("change", (e) => { filters.category = e.target.value; renderHistory(); });
+
+  // Sửa giao dịch
+  el.editClose.addEventListener("click", closeEdit);
+  el.editModal.addEventListener("click", (e) => { if (e.target === el.editModal) closeEdit(); });
+  el.editAmount.addEventListener("input", (e) => { e.target.value = formatNumberInput(e.target.value); });
+  el.editCategoryGrid.addEventListener("click", (e) => {
+    const btn = e.target.closest(".cat-btn");
+    if (btn) { editing.category = btn.dataset.cat; renderEditCategory(); }
+  });
+  el.editEssentialToggle.addEventListener("click", (e) => {
+    const btn = e.target.closest(".ess-btn");
+    if (btn) { editing.essential = btn.dataset.essential === "true"; renderEditEssential(); }
+  });
+  el.editSaveBtn.addEventListener("click", saveEdit);
 }
 
 // ---- Init ----
@@ -1351,6 +1718,10 @@ function init() {
   renderStreakCombo();
   renderAchievements();
   checkAchievements(true); // mở khóa lại các huy hiệu đã đạt, không báo
+  renderGoal();
+  renderCatBudgets();
+  renderRecurring();
+  populateFilterCategories();
   setType(state.ui.type);
   setEssential(state.ui.essential);
   // Khôi phục trạng thái âm thanh
@@ -1363,12 +1734,18 @@ function init() {
   // Khôi phục cài đặt AI
   el.aiEnabled.checked = !!state.ai.enabled;
   el.aiKey.value = state.ai.key || "";
+  // Khôi phục mục tiêu & tiền tệ
+  if (state.goal.name) el.goalName.value = state.goal.name;
+  if (state.goal.target > 0) el.goalTarget.value = new Intl.NumberFormat("vi-VN").format(state.goal.target);
+  el.currencySelect.value = state.currency;
   // Theme + PWA
   applyTheme();
   setupPWA();
   // Lời chào mở màn
   lastReaction = { text: MESSAGES[state.mood].idle, tone: null, mood: state.mood };
   el.momMessage.textContent = MESSAGES[state.mood].idle;
+  // Nhắc chi tiêu định kỳ tới hạn
+  remindRecurringDue();
   // Onboarding lần đầu
   if (!state.onboardingDone) {
     setTimeout(openOnboard, 400);
