@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mẹ Thiên Hạ 💸 - Quản lý tài chính kiểu "bị mắng mới chừa"</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+    <!-- Header -->
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-emoji">👩‍🦰</span>
+        <div>
+          <h1>Mẹ Thiên Hạ</h1>
+          <p class="tagline">Tiêu hoang là bị mắng. Tiết kiệm thì... cũng bị nói.</p>
+        </div>
+      </div>
+      <button id="moodBtn" class="mood-btn" title="Đổi tính cách">
+        <span id="moodLabel">😤 Mẹ nghiêm khắc</span>
+      </button>
+    </header>
+
+    <main class="layout">
+      <!-- LEFT: Mom reaction + balance -->
+      <section class="left">
+        <div class="mom-card">
+          <div class="mom-avatar" id="momAvatar">👩‍🦰</div>
+          <div class="speech-bubble" id="speechBubble">
+            <p id="momMessage">Tiền đâu? Khai báo chi tiêu ngay, để mẹ còn liệu mà la...</p>
+          </div>
+        </div>
+
+        <div class="stats">
+          <div class="stat-card balance">
+            <span class="stat-label">Số dư trong ví</span>
+            <span class="stat-value" id="balanceValue">0₫</span>
+          </div>
+          <div class="stat-row">
+            <div class="stat-card mini income">
+              <span class="stat-label">Đã thu</span>
+              <span class="stat-value-sm" id="incomeValue">0₫</span>
+            </div>
+            <div class="stat-card mini expense">
+              <span class="stat-label">Đã tiêu</span>
+              <span class="stat-value-sm" id="expenseValue">0₫</span>
+            </div>
+            <div class="stat-card mini saving">
+              <span class="stat-label">Heo đất</span>
+              <span class="stat-value-sm" id="savingValue">0₫</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="salary-box">
+          <label for="salaryInput">💼 Lương tháng của bạn</label>
+          <div class="salary-input-row">
+            <input type="text" id="salaryInput" inputmode="numeric" placeholder="VD: 7.000.000" />
+            <button id="saveSalaryBtn">Lưu</button>
+          </div>
+          <p class="salary-hint" id="salaryHint">Mẹ cần biết lương để còn so sánh với mức tiêu của bạn.</p>
+        </div>
+      </section>
+
+      <!-- RIGHT: Add form + history -->
+      <section class="right">
+        <div class="form-card">
+          <h2>Ghi một khoản mới</h2>
+
+          <div class="type-tabs" id="typeTabs">
+            <button class="type-tab active" data-type="expense">🛍️ Chi tiêu</button>
+            <button class="type-tab" data-type="income">💰 Thu nhập</button>
+            <button class="type-tab" data-type="saving">🐷 Tiết kiệm</button>
+          </div>
+
+          <div class="field">
+            <label for="amountInput">Số tiền</label>
+            <input type="text" id="amountInput" inputmode="numeric" placeholder="VD: 60.000" autocomplete="off" />
+          </div>
+
+          <div class="field">
+            <label for="noteInput">Ghi chú</label>
+            <input type="text" id="noteInput" placeholder="VD: Mua cốc trà sữa" autocomplete="off" />
+          </div>
+
+          <div class="field" id="essentialField">
+            <label>Khoản này có thiết yếu không?</label>
+            <div class="essential-toggle" id="essentialToggle">
+              <button class="ess-btn active" data-essential="false">😋 Không thiết yếu</button>
+              <button class="ess-btn" data-essential="true">🧾 Thiết yếu</button>
+            </div>
+          </div>
+
+          <button id="addBtn" class="add-btn">Ghi sổ & nghe mẹ phán 👂</button>
+        </div>
+
+        <div class="history-card">
+          <div class="history-head">
+            <h2>Sổ chi tiêu</h2>
+            <button id="clearBtn" class="clear-btn" title="Xóa hết">🗑️ Xóa hết</button>
+          </div>
+          <ul id="historyList" class="history-list">
+            <li class="empty-state" id="emptyState">Chưa có gì cả. Hôm nay ngoan thế? 🤨</li>
+          </ul>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p>Dữ liệu lưu ngay trên máy bạn. Mẹ không lưu trên mây, mẹ chỉ lưu trong tim 💚</p>
+    </footer>
+  </div>
+
+  <!-- Toast for mom reaction -->
+  <div class="toast" id="toast"></div>
+
+  <script src="messages.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
