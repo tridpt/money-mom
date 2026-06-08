@@ -20,6 +20,8 @@ let state = {
   catBudgets: {},                    // hạn mức theo danh mục { catId: số }
   recurring: [],                     // chi tiêu định kỳ [{id, name, amount, category, day, lastApplied}]
   lastSummaryMonth: "",              // tháng đã xem tổng kết (YYYY-M)
+  anger: 35,                         // tâm trạng: 0 (vui) .. 100 (giận tím người)
+  angerDay: "",                      // ngày cập nhật anger gần nhất (để giảm dần theo ngày)
   mood: "mom", // mom | ex | boss | neighbor | dad
   combo: 0,        // số lần tiêu hoang liên tiếp
   maxCombo: 0,     // combo cao nhất từng đạt
@@ -251,6 +253,12 @@ const el = {
   settingsPage: $("settingsPage"),
   settingsClose: $("settingsClose"),
   settingsNav: $("settingsNav"),
+  // Mới: mood meter
+  moodFace: $("moodFace"),
+  moodBarFill: $("moodBarFill"),
+  moodMeterLabel: $("moodMeterLabel"),
+  momCard: document.querySelector(".mom-card"),
+  appRoot: document.querySelector(".app"),
 };
 
 // Trạng thái bộ lọc & sửa
@@ -507,6 +515,13 @@ function speak(text, tone) {
   el.momAvatar.classList.remove("shake");
   void el.momAvatar.offsetWidth; // reflow để chạy lại animation
   el.momAvatar.classList.add("shake");
+  // Rung màn hình khi bị mắng lúc mẹ đang giận
+  if (tone === "scold" && state.anger >= 65 && el.appRoot) {
+    el.appRoot.classList.remove("screen-shake");
+    void el.appRoot.offsetWidth;
+    el.appRoot.classList.add("screen-shake");
+    setTimeout(() => el.appRoot.classList.remove("screen-shake"), 500);
+  }
   showToast(text, tone);
   speakAloud(text);
 }
@@ -786,6 +801,115 @@ function pickByAmount(tiers, amount, vars) {
   return pickMessage(tiers[tiers.length - 1].lines, vars);
 }
 
+// ---- Tâm trạng nhân vật (anger 0..100) ----
+const ANGER_FACES = [
+  { max: 15, face: "🥰", label: "Hài lòng lắm", color: "linear-gradient(90deg,#36d399,#2bbf86)" },
+  { max: 35, face: "🙂", label: "Vui vẻ", color: "linear-gradient(90deg,#7ddc9f,#36d399)" },
+  { max: 55, face: "😐", label: "Bình thường", color: "linear-gradient(90deg,#ffd166,#f5a623)" },
+  { max: 75, face: "😤", label: "Khó chịu rồi đấy", color: "linear-gradient(90deg,#ff9f43,#ff6b6b)" },
+  { max: 101, face: "😡", label: "Giận tím người!", color: "linear-gradient(90deg,#ff6b6b,#c0392b)" },
+];
+const ANGER_LABELS_EN = ["Very pleased", "Happy", "Neutral", "Getting annoyed", "Furious!"];
+
+function angerInfo() {
+  const a = state.anger;
+  for (let i = 0; i < ANGER_FACES.length; i++) {
+    if (a <= ANGER_FACES[i].max) {
+      const info = ANGER_FACES[i];
+      return { face: info.face, label: state.lang === "en" ? ANGER_LABELS_EN[i] : info.label, color: info.color };
+    }
+  }
+  return ANGER_FACES[2];
+}
+
+function renderMoodMeter(bump) {
+  const info = angerInfo();
+  el.moodFace.textContent = info.face;
+  el.moodBarFill.style.width = state.anger + "%";
+  el.moodBarFill.style.background = info.color;
+  el.moodMeterLabel.textContent = (state.lang === "en" ? "Mood: " : "Tâm trạng: ") + info.label;
+  if (el.momCard) el.momCard.classList.toggle("angry", state.anger >= 70);
+  if (bump) {
+    el.moodFace.classList.remove("bump");
+    void el.moodFace.offsetWidth;
+    el.moodFace.classList.add("bump");
+  }
+}
+
+function adjustAnger(delta) {
+  state.anger = Math.max(0, Math.min(100, Math.round(state.anger + delta)));
+  state.angerDay = new Date().toDateString();
+  save();
+  renderMoodMeter(true);
+}
+
+function decayAngerOnLoad() {
+  const today = new Date().toDateString();
+  if (state.angerDay && state.angerDay !== today) {
+    // mỗi ngày không gặp, mẹ nguôi dần về mức 35
+    const last = new Date(state.angerDay);
+    const days = Math.max(1, Math.round((Date.now() - last.getTime()) / 86400000));
+    const target = 35;
+    if (state.anger > target) state.anger = Math.max(target, state.anger - days * 10);
+    else state.anger = Math.min(target, state.anger + days * 6);
+  }
+  state.angerDay = today;
+}
+
+function angerDelta(t) {
+  if (t.type === "saving") return t.amount >= 5000000 ? -30 : t.amount >= 500000 ? -18 : -8;
+  if (t.type === "income") return -6;
+  if (t.type === "expense") {
+    if (t.essential) return t.amount >= 5000000 ? 12 : 2;
+    let d = t.amount >= 10000000 ? 28 : t.amount >= 2000000 ? 20 : t.amount >= 500000 ? 12 : t.amount >= 100000 ? 7 : 4;
+    d += Math.min(state.combo * 2, 16);
+    return d;
+  }
+  return 0;
+}
+
+// ---- Mẹ "nhớ dai": nhắc chuyện cũ ----
+function sameDate(a, b) { return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate(); }
+function isYesterday(d, ref) {
+  const y = new Date(ref); y.setDate(y.getDate() - 1);
+  return sameDate(d, y);
+}
+function memoryCallback(t) {
+  if (t.type !== "expense" || t.essential || state.lang === "en") return null;
+  const today = new Date(t.ts);
+  let todayCount = 0, yesterdayCount = 0, weekCount = 0;
+  for (const x of state.transactions) {
+    if (x.id === t.id || x.type !== "expense" || x.essential) continue;
+    if ((x.category || "") !== (t.category || "")) continue;
+    const d = new Date(x.ts);
+    if (sameDate(d, today)) todayCount++;
+    else if (isYesterday(d, today)) yesterdayCount++;
+    if (today.getTime() - x.ts <= 7 * 86400000) weekCount++;
+  }
+  const label = (getCat(t.category).label || "khoản này").toLowerCase();
+  if (todayCount >= 2) return `Lại ${label}?! Hôm nay con tiêu cho ${label} ${todayCount + 1} lần rồi đấy, nghiện hả con?`;
+  if (todayCount >= 1) return `Hôm nay ${label} lần nữa à? Bộ ${label} là chân ái của con hả?`;
+  if (yesterdayCount >= 1) return `Hôm qua ${label} rồi, nay lại ${label} nữa à con?`;
+  if (weekCount >= 3) return `Tuần này ${label} tới ${weekCount + 1} lần rồi đó, con tự đếm đi.`;
+  return null;
+}
+
+// ---- Phản ứng theo giờ / thời điểm ----
+function timeQuip(t) {
+  if (state.lang === "en") return null;
+  const d = new Date(t.ts);
+  const h = d.getHours();
+  const day = d.getDate();
+  const daysInMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+  const pool = [];
+  if (h >= 0 && h < 5) pool.push(`Giờ này (${h} giờ sáng) không ngủ còn online tiêu tiền hả con?`);
+  else if (h >= 22) pool.push("Khuya rồi còn tiêu, mất ngủ vì xót tiền cho coi.");
+  if (day >= daysInMonth - 3) pool.push("Cuối tháng rồi mà còn vung tay thế con?");
+  else if (day <= 3) pool.push("Đầu tháng đã tiêu mạnh, cuối tháng cạp đất à con?");
+  if (!pool.length) return null;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
 function reactTo(transaction) {
   const m = getMood(state.mood);
   const vars = { amount: formatVND(transaction.amount), note: transaction.note };
@@ -822,6 +946,13 @@ function reactTo(transaction) {
         text = contextual;
       } else {
         text = pickMessage(pool, vars);
+      }
+      // Mẹ nhớ dai + phản ứng theo giờ
+      const extras = [];
+      const mem = memoryCallback(transaction); if (mem) extras.push(mem);
+      const tq = timeQuip(transaction); if (tq) extras.push(tq);
+      if (extras.length && Math.random() < 0.7) {
+        text += " " + extras[Math.floor(Math.random() * extras.length)];
       }
       tone = "scold";
       sound = "scold";
@@ -913,6 +1044,7 @@ function addTransaction() {
   renderStreakCombo();
   renderGoal();
   renderCatBudgets();
+  adjustAnger(angerDelta(t));
   reactTo(t);
   checkAchievements();
 
@@ -951,6 +1083,7 @@ function clearAll() {
   if (!confirm("Xóa hết sổ chi tiêu? Mẹ sẽ quên hết tội của con đấy.")) return;
   state.transactions = [];
   state.combo = 0;
+  state.anger = 35;
   save();
   renderStats();
   renderHistory();
@@ -959,6 +1092,7 @@ function clearAll() {
   renderStreakCombo();
   renderGoal();
   renderCatBudgets();
+  renderMoodMeter();
   speak("Xóa sạch rồi. Coi như mẹ tha cho con lần này. Làm lại từ đầu nha.", "praise");
 }
 
@@ -2564,6 +2698,7 @@ function toggleLang() {
   populateFilterCategories();
   el.filterCategory.value = filters.category;
   el.filterType.value = filters.type;
+  renderMoodMeter();
   lastReaction = { text: getMood(state.mood).idle, tone: null, mood: state.mood };
   el.momMessage.textContent = lastReaction.text;
 }
@@ -2757,6 +2892,7 @@ function bindEvents() {
 // ---- Init ----
 function init() {
   load();
+  decayAngerOnLoad();
   bindEvents();
   renderMood();
   renderSalary();
@@ -2772,6 +2908,7 @@ function init() {
   renderCatBudgets();
   renderRecurring();
   populateFilterCategories();
+  renderMoodMeter();
   setType(state.ui.type);
   setEssential(state.ui.essential);
   // Khôi phục trạng thái âm thanh

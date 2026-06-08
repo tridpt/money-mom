@@ -983,3 +983,40 @@ body {
   .settings-content { padding: 22px 16px; }
   .panel-title { font-size: 20px; }
 }
+
+/* ===== Mood meter (tâm trạng nhân vật) ===== */
+.mood-meter {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  transition: border-color .3s;
+}
+.mood-face { font-size: 38px; line-height: 1; flex-shrink: 0; transition: transform .3s; }
+.mood-face.bump { animation: faceBump .4s; }
+@keyframes faceBump { 0%,100% { transform: scale(1); } 50% { transform: scale(1.35); } }
+.mood-bar-wrap { flex: 1; min-width: 0; }
+.mood-bar {
+  width: 100%; height: 12px; background: var(--bg);
+  border: 1px solid var(--line); border-radius: 999px; overflow: hidden;
+}
+.mood-bar-fill {
+  height: 100%; width: 35%; border-radius: 999px;
+  background: linear-gradient(90deg, var(--income), #2bbf86);
+  transition: width .5s ease, background .4s;
+}
+.mood-meter-label { display: block; font-size: 12.5px; font-weight: 600; color: var(--muted); margin-top: 7px; }
+
+/* Rung màn hình khi mẹ giận */
+@keyframes screenShake {
+  0%,100% { transform: translateX(0); }
+  20% { transform: translateX(-8px); }
+  40% { transform: translateX(8px); }
+  60% { transform: translateX(-5px); }
+  80% { transform: translateX(5px); }
+}
+.app.screen-shake { animation: screenShake .45s; }
+.mom-card.angry { border-color: var(--expense); box-shadow: 0 0 0 1px var(--expense), 0 18px 40px rgba(255,0,0,.12); }
