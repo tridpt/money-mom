@@ -111,79 +111,7 @@
           </div>
         </div>
 
-        <details class="settings-box" id="catBudgetBox">
-          <summary>🎯 Hạn mức theo từng danh mục</summary>
-          <div class="catbudget-body" id="catBudgetBody"></div>
-        </details>
-
-        <details class="settings-box" id="currencyBox">
-          <summary>💱 Đơn vị tiền tệ</summary>
-          <div class="settings-body">
-            <select id="currencySelect">
-              <option value="VND">₫ VND - Việt Nam Đồng</option>
-              <option value="USD">$ USD - US Dollar</option>
-              <option value="EUR">€ EUR - Euro</option>
-              <option value="JPY">¥ JPY - Yên Nhật</option>
-              <option value="KRW">₩ KRW - Won Hàn</option>
-              <option value="GBP">£ GBP - Bảng Anh</option>
-            </select>
-            <p class="settings-note">Chỉ đổi ký hiệu &amp; cách hiển thị, không quy đổi tỷ giá.</p>
-          </div>
-        </details>
-
-        <details class="settings-box" id="dataBox">
-          <summary>💾 Dữ liệu &amp; sao lưu</summary>
-          <div class="settings-body">
-            <p class="settings-note">Dữ liệu chỉ nằm trên máy này. Xuất ra file để sao lưu hoặc chuyển sang máy/điện thoại khác.</p>
-            <button id="exportBtn" class="data-btn">⬇️ Xuất dữ liệu (.json)</button>
-            <button id="importBtn" class="data-btn">⬆️ Nhập dữ liệu từ file</button>
-            <input type="file" id="importFile" accept="application/json,.json" hidden />
-            <button id="resetBtn" class="data-btn danger">🧨 Xóa toàn bộ &amp; cài đặt lại</button>
-          </div>
-        </details>
-
-        <details class="settings-box" id="customScoldBox">
-          <summary>✍️ Câu mắng tự viết</summary>
-          <div class="settings-body">
-            <p class="settings-note">Thêm câu mắng của riêng bạn. Chúng sẽ được trộn vào lúc bạn tiêu hoang.</p>
-            <div class="inline-form">
-              <input type="text" id="scoldInput" placeholder="VD: Tiêu thế bao giờ giàu?" autocomplete="off" />
-              <button id="addScoldBtn">Thêm</button>
-            </div>
-            <ul class="chip-list" id="scoldList"></ul>
-          </div>
-        </details>
-
-        <details class="settings-box" id="customCharBox">
-          <summary>🎭 Tạo nhân vật riêng</summary>
-          <div class="settings-body">
-            <p class="settings-note">Tự tạo nhân vật với tên, emoji và câu thoại riêng. Mỗi dòng là một câu.</p>
-            <div class="inline-form">
-              <input type="text" id="charEmoji" placeholder="Emoji" maxlength="4" style="max-width:70px;" />
-              <input type="text" id="charName" placeholder="Tên nhân vật (VD: Crush)" autocomplete="off" />
-            </div>
-            <textarea id="charScold" rows="3" placeholder="Câu mắng khi tiêu hoang (mỗi dòng 1 câu)"></textarea>
-            <textarea id="charPraise" rows="2" placeholder="Câu khen khi tiết kiệm (mỗi dòng 1 câu)"></textarea>
-            <button id="addCharBtn" class="data-btn">➕ Tạo nhân vật</button>
-            <ul class="chip-list" id="charList"></ul>
-          </div>
-        </details>
-
-        <details class="ai-box" id="aiBox">
-          <summary>🤖 Chế độ AI — để mẹ chửi sáng tạo</summary>
-          <div class="ai-body">
-            <p class="ai-note">
-              Bật để mẹ (và các nhân vật) tự nghĩ câu mắng riêng cho từng khoản, không lặp lại.
-              Dùng API tương thích OpenAI. <b>Key lưu ngay trên máy bạn</b> và gọi thẳng tới nhà cung cấp — không gửi đi đâu khác.
-            </p>
-            <label class="ai-toggle">
-              <input type="checkbox" id="aiEnabled" /> Bật chế độ AI
-            </label>
-            <input type="password" id="aiKey" placeholder="Dán API key (vd: sk-...)" autocomplete="off" />
-            <button id="aiSaveBtn">Lưu cài đặt AI</button>
-            <p class="ai-status" id="aiStatus"></p>
-          </div>
-        </details>
+        <button id="settingsBtn" class="settings-open-btn">⚙️ Cài đặt &amp; tùy chỉnh →</button>
       </section>
 
       <!-- RIGHT: Add form + history -->
@@ -222,20 +150,6 @@
 
           <button id="addBtn" class="add-btn">Ghi sổ & nghe mẹ phán 👂</button>
         </div>
-
-        <details class="recurring-card" id="recurringBox">
-          <summary>🔁 Chi tiêu định kỳ (tiền nhà, internet...)</summary>
-          <div class="recurring-body">
-            <p class="settings-note">Khai báo khoản cố định hằng tháng. Mỗi tháng mẹ sẽ nhắc và ghi giúp con.</p>
-            <div class="recurring-form">
-              <input type="text" id="recName" placeholder="Tên (VD: Tiền nhà)" autocomplete="off" />
-              <input type="text" id="recAmount" inputmode="numeric" placeholder="Số tiền" />
-              <input type="number" id="recDay" min="1" max="28" placeholder="Ngày" title="Ngày trong tháng (1-28)" />
-              <button id="addRecBtn">Thêm</button>
-            </div>
-            <ul class="recurring-list" id="recurringList"></ul>
-          </div>
-        </details>
 
         <div class="history-card">
           <div class="history-head">
@@ -400,6 +314,114 @@
         <button id="summaryDownload" class="share-act">⬇️ Tải ảnh</button>
         <button id="summaryCopy" class="share-act">📋 Copy</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Settings page -->
+  <div class="settings-page" id="settingsPage">
+    <aside class="settings-nav">
+      <div class="settings-nav-head">
+        <h2 id="settingsTitle">⚙️ Cài đặt</h2>
+        <button id="settingsClose" class="settings-close-btn" title="Quay lại">✕</button>
+      </div>
+      <nav id="settingsNav">
+        <button class="snav-item active" data-panel="catbudget">🎯 <span>Hạn mức danh mục</span></button>
+        <button class="snav-item" data-panel="currency">💱 <span>Đơn vị tiền tệ</span></button>
+        <button class="snav-item" data-panel="recurring">🔁 <span>Chi tiêu định kỳ</span></button>
+        <button class="snav-item" data-panel="data">💾 <span>Dữ liệu &amp; sao lưu</span></button>
+        <button class="snav-item" data-panel="scold">✍️ <span>Câu mắng tự viết</span></button>
+        <button class="snav-item" data-panel="char">🎭 <span>Tạo nhân vật riêng</span></button>
+        <button class="snav-item" data-panel="ai">🤖 <span>Chế độ AI</span></button>
+      </nav>
+    </aside>
+    <div class="settings-content">
+      <section class="settings-panel active" id="panel-catbudget">
+        <h2 class="panel-title">🎯 Hạn mức theo từng danh mục</h2>
+        <div class="catbudget-body" id="catBudgetBody"></div>
+      </section>
+
+      <section class="settings-panel" id="panel-currency">
+        <h2 class="panel-title">💱 Đơn vị tiền tệ</h2>
+        <div class="settings-body">
+          <select id="currencySelect">
+            <option value="VND">₫ VND - Việt Nam Đồng</option>
+            <option value="USD">$ USD - US Dollar</option>
+            <option value="EUR">€ EUR - Euro</option>
+            <option value="JPY">¥ JPY - Yên Nhật</option>
+            <option value="KRW">₩ KRW - Won Hàn</option>
+            <option value="GBP">£ GBP - Bảng Anh</option>
+          </select>
+          <p class="settings-note">Đổi ký hiệu &amp; cách hiển thị; nếu chọn, app sẽ quy đổi theo tỷ giá thật.</p>
+        </div>
+      </section>
+
+      <section class="settings-panel" id="panel-recurring">
+        <h2 class="panel-title">🔁 Chi tiêu định kỳ (tiền nhà, internet...)</h2>
+        <div class="recurring-body">
+          <p class="settings-note">Khai báo khoản cố định hằng tháng. Mỗi tháng mẹ sẽ nhắc và ghi giúp con.</p>
+          <div class="recurring-form">
+            <input type="text" id="recName" placeholder="Tên (VD: Tiền nhà)" autocomplete="off" />
+            <input type="text" id="recAmount" inputmode="numeric" placeholder="Số tiền" />
+            <input type="number" id="recDay" min="1" max="28" placeholder="Ngày" title="Ngày trong tháng (1-28)" />
+            <button id="addRecBtn">Thêm</button>
+          </div>
+          <ul class="recurring-list" id="recurringList"></ul>
+        </div>
+      </section>
+
+      <section class="settings-panel" id="panel-data">
+        <h2 class="panel-title">💾 Dữ liệu &amp; sao lưu</h2>
+        <div class="settings-body">
+          <p class="settings-note">Dữ liệu chỉ nằm trên máy này. Xuất ra file để sao lưu hoặc chuyển sang máy/điện thoại khác.</p>
+          <button id="exportBtn" class="data-btn">⬇️ Xuất dữ liệu (.json)</button>
+          <button id="importBtn" class="data-btn">⬆️ Nhập dữ liệu từ file</button>
+          <input type="file" id="importFile" accept="application/json,.json" hidden />
+          <button id="resetBtn" class="data-btn danger">🧨 Xóa toàn bộ &amp; cài đặt lại</button>
+        </div>
+      </section>
+
+      <section class="settings-panel" id="panel-scold">
+        <h2 class="panel-title">✍️ Câu mắng tự viết</h2>
+        <div class="settings-body">
+          <p class="settings-note">Thêm câu mắng của riêng bạn. Chúng sẽ được trộn vào lúc bạn tiêu hoang.</p>
+          <div class="inline-form">
+            <input type="text" id="scoldInput" placeholder="VD: Tiêu thế bao giờ giàu?" autocomplete="off" />
+            <button id="addScoldBtn">Thêm</button>
+          </div>
+          <ul class="chip-list" id="scoldList"></ul>
+        </div>
+      </section>
+
+      <section class="settings-panel" id="panel-char">
+        <h2 class="panel-title">🎭 Tạo nhân vật riêng</h2>
+        <div class="settings-body">
+          <p class="settings-note">Tự tạo nhân vật với tên, emoji và câu thoại riêng. Mỗi dòng là một câu.</p>
+          <div class="inline-form">
+            <input type="text" id="charEmoji" placeholder="Emoji" maxlength="4" style="max-width:70px;" />
+            <input type="text" id="charName" placeholder="Tên nhân vật (VD: Crush)" autocomplete="off" />
+          </div>
+          <textarea id="charScold" rows="3" placeholder="Câu mắng khi tiêu hoang (mỗi dòng 1 câu)"></textarea>
+          <textarea id="charPraise" rows="2" placeholder="Câu khen khi tiết kiệm (mỗi dòng 1 câu)"></textarea>
+          <button id="addCharBtn" class="data-btn">➕ Tạo nhân vật</button>
+          <ul class="chip-list" id="charList"></ul>
+        </div>
+      </section>
+
+      <section class="settings-panel" id="panel-ai">
+        <h2 class="panel-title">🤖 Chế độ AI — để mẹ chửi sáng tạo</h2>
+        <div class="ai-body">
+          <p class="ai-note">
+            Bật để mẹ (và các nhân vật) tự nghĩ câu mắng riêng cho từng khoản, không lặp lại.
+            Dùng API tương thích OpenAI. <b>Key lưu ngay trên máy bạn</b> và gọi thẳng tới nhà cung cấp — không gửi đi đâu khác.
+          </p>
+          <label class="ai-toggle">
+            <input type="checkbox" id="aiEnabled" /> Bật chế độ AI
+          </label>
+          <input type="password" id="aiKey" placeholder="Dán API key (vd: sk-...)" autocomplete="off" />
+          <button id="aiSaveBtn">Lưu cài đặt AI</button>
+          <p class="ai-status" id="aiStatus"></p>
+        </div>
+      </section>
     </div>
   </div>
 

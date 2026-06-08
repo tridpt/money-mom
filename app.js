@@ -221,6 +221,11 @@ const el = {
   charPraise: $("charPraise"),
   addCharBtn: $("addCharBtn"),
   charList: $("charList"),
+  // Mới: trang cài đặt
+  settingsBtn: $("settingsBtn"),
+  settingsPage: $("settingsPage"),
+  settingsClose: $("settingsClose"),
+  settingsNav: $("settingsNav"),
 };
 
 // Trạng thái bộ lọc & sửa
@@ -2017,6 +2022,26 @@ function deleteChar(id) {
   renderCharList();
 }
 
+// ---- Trang cài đặt ----
+function openSettings() {
+  el.settingsPage.classList.add("show");
+  document.body.style.overflow = "hidden";
+}
+function closeSettings() {
+  el.settingsPage.classList.remove("show");
+  document.body.style.overflow = "";
+}
+function switchPanel(panel) {
+  document.querySelectorAll(".snav-item").forEach((b) => {
+    b.classList.toggle("active", b.dataset.panel === panel);
+  });
+  document.querySelectorAll(".settings-panel").forEach((p) => {
+    p.classList.toggle("active", p.id === "panel-" + panel);
+  });
+  const content = document.querySelector(".settings-content");
+  if (content) content.scrollTop = 0;
+}
+
 // ---- Đa ngôn ngữ ----
 const I18N = {
   vi: {
@@ -2064,6 +2089,9 @@ const I18N = {
     editTitle: "Sửa khoản này ✏️", essential: "Thiết yếu?", essNoShort: "😋 Không", essYesShort: "🧾 Có",
     editSave: "Lưu thay đổi", share: "📤 Chia sẻ", copy: "📋 Copy",
     onboardSkip: "Bỏ qua", onboardNext: "Tiếp →", onboardStart: "Bắt đầu 🎉",
+    settingsTitle: "⚙️ Cài đặt", settingsOpen: "⚙️ Cài đặt & tùy chỉnh →",
+    navCatBudget: "Hạn mức danh mục", navCurrency: "Đơn vị tiền tệ", navRecurring: "Chi tiêu định kỳ",
+    navData: "Dữ liệu & sao lưu", navScold: "Câu mắng tự viết", navChar: "Tạo nhân vật riêng", navAI: "Chế độ AI",
   },
   en: {
     tagline: "Overspend and get scolded. Save and... still get a remark.",
@@ -2110,6 +2138,9 @@ const I18N = {
     editTitle: "Edit this entry ✏️", essential: "Essential?", essNoShort: "😋 No", essYesShort: "🧾 Yes",
     editSave: "Save changes", share: "📤 Share", copy: "📋 Copy",
     onboardSkip: "Skip", onboardNext: "Next →", onboardStart: "Start 🎉",
+    settingsTitle: "⚙️ Settings", settingsOpen: "⚙️ Settings & customization →",
+    navCatBudget: "Category budgets", navCurrency: "Currency", navRecurring: "Recurring",
+    navData: "Data & backup", navScold: "Your scoldings", navChar: "Custom character", navAI: "AI mode",
   },
 };
 function tr(k) { return (I18N[state.lang] && I18N[state.lang][k]) || I18N.vi[k] || k; }
@@ -2158,38 +2189,48 @@ function applyLang() {
   setPh("goalTarget", "goalTargetPh");
   if (!(state.salary > 0)) setText("#salaryHint", "salaryHint");
 
-  setText("#catBudgetBox summary", "catBudgetSum");
-  setText("#currencyBox summary", "currencySum");
-  setText("#currencyBox .settings-note", "currencyNote");
-  setText("#dataBox summary", "dataSum");
-  setText("#dataBox .settings-note", "dataNote");
-  setText("#exportBtn", "exportBtn");
-  setText("#importBtn", "importBtn");
-  setText("#resetBtn", "resetBtn");
-  setText("#customScoldBox summary", "scoldSum");
-  setText("#customScoldBox .settings-note", "scoldNote");
-  setPh("scoldInput", "scoldPh");
-  setText("#addScoldBtn", "add");
-  setText("#customCharBox summary", "charSum");
-  setText("#customCharBox .settings-note", "charNote");
-  setPh("charName", "charNamePh");
-  setPh("charScold", "charScoldPh");
-  setPh("charPraise", "charPraisePh");
-  setText("#addCharBtn", "addChar");
-  setText("#aiBox summary", "aiSum");
-  setText("#aiBox .ai-note", "aiNote");
-  setPh("aiKey", "aiKeyPh");
-  setText("#aiSaveBtn", "aiSaveBtn");
-  // Nhãn checkbox AI: chỉ đổi text node cuối, giữ checkbox
-  const aiToggle = document.querySelector(".ai-toggle");
-  if (aiToggle) aiToggle.lastChild.textContent = " " + tr("aiEnable");
+  // Trang cài đặt: tiêu đề, nav, panel
+  setText("#settingsTitle", "settingsTitle");
+  const navLabel = (panel, k) => setText(`.snav-item[data-panel="${panel}"] span`, k);
+  navLabel("catbudget", "navCatBudget");
+  navLabel("currency", "navCurrency");
+  navLabel("recurring", "navRecurring");
+  navLabel("data", "navData");
+  navLabel("scold", "navScold");
+  navLabel("char", "navChar");
+  navLabel("ai", "navAI");
 
-  setText("#recurringBox summary", "recSum");
-  setText("#recurringBox .settings-note", "recNote");
+  setText("#panel-catbudget .panel-title", "catBudgetSum");
+  setText("#panel-currency .panel-title", "currencySum");
+  setText("#panel-currency .settings-note", "currencyNote");
+  setText("#panel-recurring .panel-title", "recSum");
+  setText("#panel-recurring .settings-note", "recNote");
   setPh("recName", "recNamePh");
   setPh("recAmount", "recAmountPh");
   setPh("recDay", "recDayPh");
   setText("#addRecBtn", "add");
+  setText("#panel-data .panel-title", "dataSum");
+  setText("#panel-data .settings-note", "dataNote");
+  setText("#exportBtn", "exportBtn");
+  setText("#importBtn", "importBtn");
+  setText("#resetBtn", "resetBtn");
+  setText("#panel-scold .panel-title", "scoldSum");
+  setText("#panel-scold .settings-note", "scoldNote");
+  setPh("scoldInput", "scoldPh");
+  setText("#addScoldBtn", "add");
+  setText("#panel-char .panel-title", "charSum");
+  setText("#panel-char .settings-note", "charNote");
+  setPh("charName", "charNamePh");
+  setPh("charScold", "charScoldPh");
+  setPh("charPraise", "charPraisePh");
+  setText("#addCharBtn", "addChar");
+  setText("#panel-ai .panel-title", "aiSum");
+  setText("#panel-ai .ai-note", "aiNote");
+  setPh("aiKey", "aiKeyPh");
+  setText("#aiSaveBtn", "aiSaveBtn");
+  setText("#settingsBtn", "settingsOpen");
+  const aiToggle = document.querySelector(".ai-toggle");
+  if (aiToggle) aiToggle.lastChild.textContent = " " + tr("aiEnable");
 
   setText(".analytics .chart-card:first-child .chart-head h2", "pieTitle");
   setText(".analytics .chart-card:nth-child(2) h2", "barTitle");
@@ -2418,6 +2459,14 @@ function bindEvents() {
   el.charList.addEventListener("click", (e) => {
     const btn = e.target.closest("button[data-id]");
     if (btn) deleteChar(btn.dataset.id);
+  });
+
+  // Trang cài đặt
+  el.settingsBtn.addEventListener("click", openSettings);
+  el.settingsClose.addEventListener("click", closeSettings);
+  el.settingsNav.addEventListener("click", (e) => {
+    const btn = e.target.closest(".snav-item");
+    if (btn) switchPanel(btn.dataset.panel);
   });
 }
 
