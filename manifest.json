@@ -22,5 +22,21 @@
       "type": "image/png",
       "purpose": "any maskable"
     }
+  ],
+  "screenshots": [
+    {
+      "src": "screenshots/promo-narrow.png",
+      "sizes": "1080x1920",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Mẹ Thiên Hạ trên điện thoại"
+    },
+    {
+      "src": "screenshots/promo-wide.png",
+      "sizes": "1920x1080",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Mẹ Thiên Hạ trên máy tính"
+    }
   ]
 }

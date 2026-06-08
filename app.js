@@ -1843,15 +1843,28 @@ const ONBOARD_STEPS = [
 ];
 let onboardStep = 0;
 
+const ONBOARD_STEPS_EN = [
+  { emoji: "👩‍🦰", title: "Hi, I'm Money Mom!", text: "I'll help you manage your money... by scolding you out of your overspending habit." },
+  { emoji: "🛍️", title: "Log every entry", text: "Add expenses, income or savings. Spend on something non-essential and I'll scold you on the spot!" },
+  { emoji: "🎭", title: "5 tough characters", text: "Tap the top button to switch between Mom, Ex, Stingy Boss, Nosy Neighbor and Cold Dad." },
+  { emoji: "🎯", title: "Budgets & badges", text: "Set a monthly budget, keep a no-splurge streak and unlock achievement badges." },
+  { emoji: "📸", title: "Share the verdict", text: "Turn scoldings into shareable images. Now let's start saving!" },
+];
+
+function onboardSteps() {
+  return state.lang === "en" ? ONBOARD_STEPS_EN : ONBOARD_STEPS;
+}
+
 function renderOnboard() {
-  const s = ONBOARD_STEPS[onboardStep];
+  const steps = onboardSteps();
+  const s = steps[onboardStep];
   el.onboardEmoji.textContent = s.emoji;
   el.onboardTitle.textContent = s.title;
   el.onboardText.textContent = s.text;
-  el.onboardDots.innerHTML = ONBOARD_STEPS
+  el.onboardDots.innerHTML = steps
     .map((_, i) => `<span class="${i === onboardStep ? "active" : ""}"></span>`)
     .join("");
-  el.onboardNext.textContent = onboardStep === ONBOARD_STEPS.length - 1 ? "Bắt đầu 🎉" : "Tiếp →";
+  el.onboardNext.textContent = onboardStep === steps.length - 1 ? tr("onboardStart") : tr("onboardNext");
 }
 
 function openOnboard() {
@@ -1861,7 +1874,7 @@ function openOnboard() {
 }
 
 function nextOnboard() {
-  if (onboardStep < ONBOARD_STEPS.length - 1) {
+  if (onboardStep < onboardSteps().length - 1) {
     onboardStep++;
     renderOnboard();
   } else {
@@ -2018,6 +2031,39 @@ const I18N = {
     salary: "💼 Lương tháng của bạn", budget: "🎯 Hạn mức chi tiêu tháng này", goal: "🏆 Mục tiêu tiết kiệm",
     amountPh: "VD: 60.000", notePh: "VD: Mua cốc trà sữa", save: "Lưu",
     achievements: "Huy hiệu & thành tích 🏆",
+    salaryHint: "Mẹ cần biết lương để còn so sánh với mức tiêu của bạn.",
+    salaryPh: "VD: 7.000.000", budgetPh: "VD: 3.000.000",
+    goalNamePh: "VD: Mua iPhone", goalTargetPh: "VD: 10.000.000",
+    catBudgetSum: "🎯 Hạn mức theo từng danh mục", currencySum: "💱 Đơn vị tiền tệ",
+    currencyNote: "Đổi ký hiệu & cách hiển thị; nếu chọn, app sẽ quy đổi theo tỷ giá thật.",
+    dataSum: "💾 Dữ liệu & sao lưu",
+    dataNote: "Dữ liệu chỉ nằm trên máy này. Xuất ra file để sao lưu hoặc chuyển sang máy/điện thoại khác.",
+    exportBtn: "⬇️ Xuất dữ liệu (.json)", importBtn: "⬆️ Nhập dữ liệu từ file", resetBtn: "🧨 Xóa toàn bộ & cài đặt lại",
+    scoldSum: "✍️ Câu mắng tự viết",
+    scoldNote: "Thêm câu mắng của riêng bạn. Chúng sẽ được trộn vào lúc bạn tiêu hoang.",
+    scoldPh: "VD: Tiêu thế bao giờ giàu?", add: "Thêm",
+    charSum: "🎭 Tạo nhân vật riêng",
+    charNote: "Tự tạo nhân vật với tên, emoji và câu thoại riêng. Mỗi dòng là một câu.",
+    charNamePh: "Tên nhân vật (VD: Crush)", charScoldPh: "Câu mắng khi tiêu hoang (mỗi dòng 1 câu)",
+    charPraisePh: "Câu khen khi tiết kiệm (mỗi dòng 1 câu)", addChar: "➕ Tạo nhân vật",
+    aiSum: "🤖 Chế độ AI — để mẹ chửi sáng tạo",
+    aiNote: "Bật để các nhân vật tự nghĩ câu mắng riêng cho từng khoản. Dùng API tương thích OpenAI. Key lưu ngay trên máy bạn.",
+    aiEnable: "Bật chế độ AI", aiKeyPh: "Dán API key (vd: sk-...)", aiSaveBtn: "Lưu cài đặt AI",
+    recSum: "🔁 Chi tiêu định kỳ (tiền nhà, internet...)",
+    recNote: "Khai báo khoản cố định hằng tháng. Mỗi tháng mẹ sẽ nhắc và ghi giúp con.",
+    recNamePh: "Tên (VD: Tiền nhà)", recAmountPh: "Số tiền", recDayPh: "Ngày",
+    pieTitle: "Tiền đi đâu nhiều nhất 🥧", thisMonth: "Tháng này", allTime: "Tất cả",
+    barTitle: "Chi tiêu 6 tháng gần đây 📊", compareTitle: "Tháng này so với tháng trước 📈",
+    summaryBtn: "📅 Tổng kết tháng trước", savingRate: "Tỷ lệ tiết kiệm tháng này",
+    pieEmpty: "Chưa có khoản chi nào để vẽ. Tiêu đi rồi mẹ vẽ cho xem 🤨",
+    barEmpty: "Chưa có dữ liệu. Đợi con tiêu thêm vài tháng nữa nha.",
+    footer: "Dữ liệu lưu ngay trên máy bạn. Mẹ không lưu trên mây, mẹ chỉ lưu trong tim 💚",
+    shareTrigger: "📸 Khoe lời mẹ phán",
+    shareTitle: 'Khoe "thành tích" bị mẹ phán 📸', shareNow: "📤 Chia sẻ ngay",
+    downloadImg: "⬇️ Tải ảnh", copyCap: "📋 Copy caption",
+    editTitle: "Sửa khoản này ✏️", essential: "Thiết yếu?", essNoShort: "😋 Không", essYesShort: "🧾 Có",
+    editSave: "Lưu thay đổi", share: "📤 Chia sẻ", copy: "📋 Copy",
+    onboardSkip: "Bỏ qua", onboardNext: "Tiếp →", onboardStart: "Bắt đầu 🎉",
   },
   en: {
     tagline: "Overspend and get scolded. Save and... still get a remark.",
@@ -2031,6 +2077,39 @@ const I18N = {
     salary: "💼 Your monthly salary", budget: "🎯 This month's budget", goal: "🏆 Savings goal",
     amountPh: "e.g. 60,000", notePh: "e.g. Bubble tea", save: "Save",
     achievements: "Badges & achievements 🏆",
+    salaryHint: "Mom needs your salary to compare with your spending.",
+    salaryPh: "e.g. 7,000,000", budgetPh: "e.g. 3,000,000",
+    goalNamePh: "e.g. Buy iPhone", goalTargetPh: "e.g. 10,000,000",
+    catBudgetSum: "🎯 Per-category budgets", currencySum: "💱 Currency",
+    currencyNote: "Changes the symbol & format; if chosen, the app converts using real exchange rates.",
+    dataSum: "💾 Data & backup",
+    dataNote: "Data lives only on this device. Export to a file to back up or move to another device.",
+    exportBtn: "⬇️ Export data (.json)", importBtn: "⬆️ Import from file", resetBtn: "🧨 Erase everything & reset",
+    scoldSum: "✍️ Your own scoldings",
+    scoldNote: "Add your own scolding lines. They get mixed in when you splurge.",
+    scoldPh: "e.g. You'll never get rich like this", add: "Add",
+    charSum: "🎭 Create your own character",
+    charNote: "Make a character with a name, emoji and lines. One line per row.",
+    charNamePh: "Name (e.g. Crush)", charScoldPh: "Scolding lines when you splurge (one per row)",
+    charPraisePh: "Praise lines when you save (one per row)", addChar: "➕ Create character",
+    aiSum: "🤖 AI mode — creative scolding",
+    aiNote: "Turn on so characters invent unique scoldings per entry. Uses an OpenAI-compatible API. Key stays on your device.",
+    aiEnable: "Enable AI mode", aiKeyPh: "Paste API key (e.g. sk-...)", aiSaveBtn: "Save AI settings",
+    recSum: "🔁 Recurring expenses (rent, internet...)",
+    recNote: "Declare fixed monthly costs. Each month mom reminds and logs them for you.",
+    recNamePh: "Name (e.g. Rent)", recAmountPh: "Amount", recDayPh: "Day",
+    pieTitle: "Where the money goes 🥧", thisMonth: "This month", allTime: "All time",
+    barTitle: "Spending, last 6 months 📊", compareTitle: "This month vs last month 📈",
+    summaryBtn: "📅 Last month's summary", savingRate: "Savings rate this month",
+    pieEmpty: "No expenses to chart yet. Spend something and I'll draw it 🤨",
+    barEmpty: "No data yet. Spend a few more months and check back.",
+    footer: "Your data stays on your device. Mom doesn't store it in the cloud, only in her heart 💚",
+    shareTrigger: "📸 Share the verdict",
+    shareTitle: 'Show off your "achievement" 📸', shareNow: "📤 Share now",
+    downloadImg: "⬇️ Save image", copyCap: "📋 Copy caption",
+    editTitle: "Edit this entry ✏️", essential: "Essential?", essNoShort: "😋 No", essYesShort: "🧾 Yes",
+    editSave: "Save changes", share: "📤 Share", copy: "📋 Copy",
+    onboardSkip: "Skip", onboardNext: "Next →", onboardStart: "Start 🎉",
   },
 };
 function tr(k) { return (I18N[state.lang] && I18N[state.lang][k]) || I18N.vi[k] || k; }
@@ -2061,7 +2140,6 @@ function applyLang() {
   setPh("amountInput", "amountPh");
   setPh("noteInput", "notePh");
 
-  // Stat labels theo thứ tự
   const labels = document.querySelectorAll(".stats .stat-label");
   const order = ["balance", "paidIn", "spent", "piggy", "streak", "combo"];
   labels.forEach((lb, i) => { if (order[i]) lb.textContent = tr(order[i]); });
@@ -2071,7 +2149,76 @@ function applyLang() {
   setText(".goal-box > label", "goal");
   setText(".ach-card h2", "achievements");
 
-  // Cập nhật option lọc
+  setText("#saveSalaryBtn", "save");
+  setText("#saveBudgetBtn", "save");
+  setText("#saveGoalBtn", "save");
+  setPh("salaryInput", "salaryPh");
+  setPh("budgetInput", "budgetPh");
+  setPh("goalName", "goalNamePh");
+  setPh("goalTarget", "goalTargetPh");
+  if (!(state.salary > 0)) setText("#salaryHint", "salaryHint");
+
+  setText("#catBudgetBox summary", "catBudgetSum");
+  setText("#currencyBox summary", "currencySum");
+  setText("#currencyBox .settings-note", "currencyNote");
+  setText("#dataBox summary", "dataSum");
+  setText("#dataBox .settings-note", "dataNote");
+  setText("#exportBtn", "exportBtn");
+  setText("#importBtn", "importBtn");
+  setText("#resetBtn", "resetBtn");
+  setText("#customScoldBox summary", "scoldSum");
+  setText("#customScoldBox .settings-note", "scoldNote");
+  setPh("scoldInput", "scoldPh");
+  setText("#addScoldBtn", "add");
+  setText("#customCharBox summary", "charSum");
+  setText("#customCharBox .settings-note", "charNote");
+  setPh("charName", "charNamePh");
+  setPh("charScold", "charScoldPh");
+  setPh("charPraise", "charPraisePh");
+  setText("#addCharBtn", "addChar");
+  setText("#aiBox summary", "aiSum");
+  setText("#aiBox .ai-note", "aiNote");
+  setPh("aiKey", "aiKeyPh");
+  setText("#aiSaveBtn", "aiSaveBtn");
+  // Nhãn checkbox AI: chỉ đổi text node cuối, giữ checkbox
+  const aiToggle = document.querySelector(".ai-toggle");
+  if (aiToggle) aiToggle.lastChild.textContent = " " + tr("aiEnable");
+
+  setText("#recurringBox summary", "recSum");
+  setText("#recurringBox .settings-note", "recNote");
+  setPh("recName", "recNamePh");
+  setPh("recAmount", "recAmountPh");
+  setPh("recDay", "recDayPh");
+  setText("#addRecBtn", "add");
+
+  setText(".analytics .chart-card:first-child .chart-head h2", "pieTitle");
+  setText(".analytics .chart-card:nth-child(2) h2", "barTitle");
+  setText(".chart-card.compare .chart-head h2", "compareTitle");
+  const pr = document.querySelectorAll("#pieRange .range-tab");
+  if (pr[0]) pr[0].textContent = tr("thisMonth");
+  if (pr[1]) pr[1].textContent = tr("allTime");
+  setText("#summaryBtn", "summaryBtn");
+  setText(".saving-rate-head span:first-child", "savingRate");
+  setText("#pieEmpty", "pieEmpty");
+  setText("#barEmpty", "barEmpty");
+  setText(".footer p", "footer");
+  setText("#shareBtn", "shareTrigger");
+
+  setText("#shareModal h3", "shareTitle");
+  setText("#shareNative", "shareNow");
+  setText("#shareDownload", "downloadImg");
+  setText("#shareCopy", "copyCap");
+  setText("#editModal h3", "editTitle");
+  setText("#editEssentialField label", "essential");
+  const eess = document.querySelectorAll("#editEssentialToggle .ess-btn");
+  if (eess[0]) eess[0].textContent = tr("essNoShort");
+  if (eess[1]) eess[1].textContent = tr("essYesShort");
+  setText("#editSaveBtn", "editSave");
+  setText("#summaryShare", "share");
+  setText("#summaryDownload", "downloadImg");
+  setText("#summaryCopy", "copy");
+  setText("#onboardSkip", "onboardSkip");
+
   if (el.filterType) {
     el.filterType.options[0].textContent = tr("allTypes");
     el.filterType.options[1].textContent = tr("expense");
@@ -2086,7 +2233,6 @@ function toggleLang() {
   save();
   applyLang();
   pickVoice();
-  // Render lại phần phụ thuộc ngôn ngữ
   renderMood();
   renderCategoryGrid();
   renderHistory();
@@ -2094,6 +2240,7 @@ function toggleLang() {
   renderCatBudgets();
   populateFilterCategories();
   el.filterCategory.value = filters.category;
+  el.filterType.value = filters.type;
   lastReaction = { text: getMood(state.mood).idle, tone: null, mood: state.mood };
   el.momMessage.textContent = lastReaction.text;
 }

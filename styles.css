@@ -869,3 +869,42 @@ body {
 .chip-item span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .chip-item button { background: transparent; border: none; color: var(--muted); cursor: pointer; font-size: 14px; }
 .chip-item button:hover { color: var(--expense); }
+
+/* ===== Responsive: điện thoại nhỏ ===== */
+@media (max-width: 560px) {
+  .app { padding: 16px 12px 32px; }
+  .brand h1 { font-size: 22px; }
+  .brand-emoji { font-size: 34px; }
+  .tagline { font-size: 12px; }
+  .topbar { gap: 10px; }
+  .topbar-actions { flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+  .icon-btn { width: 38px; height: 38px; font-size: 16px; }
+  .mood-btn { padding: 9px 12px; font-size: 13px; }
+
+  .stat-value { font-size: 26px; }
+  .stat-row { gap: 8px; }
+  .stat-card.mini { padding: 11px; }
+
+  /* Các form nhiều cột -> xếp dọc cho dễ bấm */
+  .goal-inputs { grid-template-columns: 1fr 1fr; }
+  .goal-inputs button { grid-column: 1 / -1; padding: 11px; }
+  .recurring-form { grid-template-columns: 1fr 1fr; }
+  .recurring-form #recDay { grid-column: 1; }
+  .recurring-form button { grid-column: 1 / -1; padding: 11px; }
+
+  /* Modal gọn hơn */
+  .modal { padding: 18px; border-radius: 16px; }
+  .modal h3 { font-size: 17px; }
+  .share-actions { grid-template-columns: 1fr; }
+
+  /* Biểu đồ tròn xếp dọc */
+  .pie-wrap { justify-content: center; }
+  .pie-wrap canvas { width: 240px; height: 240px; }
+
+  .footer { font-size: 11.5px; }
+}
+
+@media (max-width: 380px) {
+  .type-tabs { grid-template-columns: 1fr; }
+  .category-grid { grid-template-columns: repeat(2, 1fr); }
+}
