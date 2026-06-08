@@ -57,6 +57,8 @@ npx http-server . -p 8080 -c-1
 # rồi mở http://127.0.0.1:8080
 ```
 
+**Cách 3 (Windows, không cần gõ lệnh):** double-click vào file **`start.bat`** — nó tự chạy server và mở trình duyệt. Cần cài [Node.js](https://nodejs.org) trước. Để dừng: đóng cửa sổ server vừa mở.
+
 ## 🧱 Cấu trúc
 
 ```
