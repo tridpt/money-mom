@@ -42,7 +42,7 @@ Thay vì những biểu đồ thu chi khô khan, Money Mom quản lý ví tiền
 
 **Trải nghiệm**
 - 📲 PWA: cài lên màn hình chính, chạy offline.
-- 🌗 Sáng/tối · 🌐 song ngữ Việt/Anh · 👋 onboarding · 🤖 chế độ AI tùy chọn.
+- 🌗 Sáng/tối · 🌐 song ngữ Việt/Anh · 👋 onboarding · ✨ chế độ AI tùy chọn.
 - 💾 Xuất / nhập dữ liệu JSON để sao lưu, chuyển máy.
 
 ## 🚀 Chạy thử

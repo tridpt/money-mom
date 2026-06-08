@@ -53,12 +53,12 @@
           </div>
         </div>
         <div class="mom-actions">
-          <button id="argueBtn" class="mom-act" style="display:none;">😤 Cãi lại</button>
-          <button id="apologizeBtn" class="mom-act">🙇 Xin lỗi mẹ</button>
-          <button id="begBtn" class="mom-act">💸 Xin tiền mẹ</button>
-          <button id="dailyBtn" class="mom-act">📜 Câu hôm nay</button>
+          <button id="argueBtn" class="mom-act" style="display:none;">Cãi lại</button>
+          <button id="apologizeBtn" class="mom-act">Xin lỗi mẹ</button>
+          <button id="begBtn" class="mom-act">Xin tiền mẹ</button>
+          <button id="dailyBtn" class="mom-act">Câu hôm nay</button>
         </div>
-        <button id="shareBtn" class="share-trigger" title="Khoe lời mẹ phán">📸 Khoe lời mẹ phán</button>
+        <button id="shareBtn" class="share-trigger" title="Khoe lời mẹ phán">Khoe lời mẹ phán</button>
 
         <div class="game-card">
           <div class="level-row">
@@ -70,7 +70,7 @@
             </div>
           </div>
           <div class="challenge">
-            <div class="challenge-head">🎯 <span id="challengeLabel">Thử thách tuần</span></div>
+            <div class="challenge-head"><span id="challengeLabel">Thử thách tuần</span></div>
             <div class="challenge-desc" id="challengeDesc">—</div>
             <div class="challenge-status" id="challengeStatus"></div>
           </div>
@@ -97,18 +97,18 @@
           </div>
           <div class="stat-row">
             <div class="stat-card mini streak">
-              <span class="stat-label">🔥 Không tiêu hoang</span>
+              <span class="stat-label">Không tiêu hoang</span>
               <span class="stat-value-sm" id="streakValue">0 ngày</span>
             </div>
             <div class="stat-card mini combo">
-              <span class="stat-label">💥 Combo tiêu hoang</span>
+              <span class="stat-label">Combo tiêu hoang</span>
               <span class="stat-value-sm" id="comboValue">x0</span>
             </div>
           </div>
         </div>
 
         <div class="salary-box">
-          <label for="salaryInput">💼 Lương tháng của bạn</label>
+          <label for="salaryInput">Lương tháng của bạn</label>
           <div class="salary-input-row">
             <input type="text" id="salaryInput" inputmode="numeric" placeholder="VD: 7.000.000" />
             <button id="saveSalaryBtn">Lưu</button>
@@ -117,7 +117,7 @@
         </div>
 
         <div class="budget-box">
-          <label for="budgetInput">🎯 Hạn mức chi tiêu tháng này</label>
+          <label for="budgetInput">Hạn mức chi tiêu tháng này</label>
           <div class="salary-input-row">
             <input type="text" id="budgetInput" inputmode="numeric" placeholder="VD: 3.000.000" />
             <button id="saveBudgetBtn">Lưu</button>
@@ -129,7 +129,7 @@
         </div>
 
         <div class="goal-box">
-          <label>🏆 Mục tiêu tiết kiệm</label>
+          <label>Mục tiêu tiết kiệm</label>
           <div class="goal-inputs">
             <input type="text" id="goalName" placeholder="VD: Mua iPhone" autocomplete="off" />
             <input type="text" id="goalTarget" inputmode="numeric" placeholder="VD: 10.000.000" />
@@ -141,7 +141,7 @@
           </div>
         </div>
 
-        <button id="settingsBtn" class="settings-open-btn">⚙️ Cài đặt &amp; tùy chỉnh →</button>
+        <button id="settingsBtn" class="settings-open-btn">Cài đặt &amp; tùy chỉnh →</button>
       </section>
 
       <!-- RIGHT: Add form + history -->
@@ -150,9 +150,9 @@
           <h2>Ghi một khoản mới</h2>
 
           <div class="type-tabs" id="typeTabs">
-            <button class="type-tab active" data-type="expense">🛍️ Chi tiêu</button>
-            <button class="type-tab" data-type="income">💰 Thu nhập</button>
-            <button class="type-tab" data-type="saving">🐷 Tiết kiệm</button>
+            <button class="type-tab active" data-type="expense">Chi tiêu</button>
+            <button class="type-tab" data-type="income">Thu nhập</button>
+            <button class="type-tab" data-type="saving">Tiết kiệm</button>
           </div>
 
           <div class="field">
@@ -173,26 +173,26 @@
           <div class="field" id="essentialField">
             <label>Khoản này có thiết yếu không?</label>
             <div class="essential-toggle" id="essentialToggle">
-              <button class="ess-btn active" data-essential="false">😋 Không thiết yếu</button>
-              <button class="ess-btn" data-essential="true">🧾 Thiết yếu</button>
+              <button class="ess-btn active" data-essential="false">Không thiết yếu</button>
+              <button class="ess-btn" data-essential="true">Thiết yếu</button>
             </div>
           </div>
 
-          <button id="addBtn" class="add-btn">Ghi sổ & nghe mẹ phán 👂</button>
+          <button id="addBtn" class="add-btn">Ghi sổ & nghe mẹ phán</button>
         </div>
 
         <div class="history-card">
           <div class="history-head">
             <h2>Sổ chi tiêu</h2>
-            <button id="clearBtn" class="clear-btn" title="Xóa hết">🗑️ Xóa hết</button>
+            <button id="clearBtn" class="clear-btn" title="Xóa hết">Xóa hết</button>
           </div>
           <div class="history-filters">
-            <input type="text" id="searchInput" placeholder="🔍 Tìm theo ghi chú..." autocomplete="off" />
+            <input type="text" id="searchInput" placeholder="Tìm theo ghi chú..." autocomplete="off" />
             <select id="filterType">
               <option value="all">Tất cả loại</option>
-              <option value="expense">🛍️ Chi tiêu</option>
-              <option value="income">💰 Thu nhập</option>
-              <option value="saving">🐷 Tiết kiệm</option>
+              <option value="expense">Chi tiêu</option>
+              <option value="income">Thu nhập</option>
+              <option value="saving">Tiết kiệm</option>
             </select>
             <select id="filterCategory">
               <option value="all">Mọi danh mục</option>
@@ -209,7 +209,7 @@
     <section class="analytics">
       <div class="chart-card">
         <div class="chart-head">
-          <h2>Tiền đi đâu nhiều nhất 🥧</h2>
+          <h2>Tiền đi đâu nhiều nhất</h2>
           <div class="range-tabs" id="pieRange">
             <button class="range-tab active" data-range="month">Tháng này</button>
             <button class="range-tab" data-range="all">Tất cả</button>
@@ -223,15 +223,15 @@
       </div>
 
       <div class="chart-card">
-        <h2>Chi tiêu 6 tháng gần đây 📊</h2>
+        <h2>Chi tiêu 6 tháng gần đây</h2>
         <canvas id="barChart" width="640" height="300"></canvas>
         <p class="chart-empty" id="barEmpty">Chưa có dữ liệu. Đợi con tiêu thêm vài tháng nữa nha.</p>
       </div>
 
       <div class="chart-card compare">
         <div class="chart-head">
-          <h2>Tháng này so với tháng trước 📈</h2>
-          <button id="summaryBtn" class="range-tab">📅 Tổng kết tháng trước</button>
+          <h2>Tháng này so với tháng trước</h2>
+          <button id="summaryBtn" class="range-tab">Tổng kết tháng trước</button>
         </div>
         <div class="compare-grid" id="compareStats"></div>
         <p class="prediction" id="prediction"></p>
@@ -250,7 +250,7 @@
     <section class="achievements">
       <div class="ach-card">
         <div class="chart-head">
-          <h2>Huy hiệu &amp; thành tích 🏆</h2>
+          <h2>Huy hiệu &amp; thành tích</h2>
           <span class="ach-count" id="achCount">0/0</span>
         </div>
         <div class="ach-grid" id="achGrid"></div>
@@ -258,7 +258,7 @@
     </section>
 
     <footer class="footer">
-      <p>Dữ liệu lưu ngay trên máy bạn. Mẹ không lưu trên mây, mẹ chỉ lưu trong tim 💚</p>
+      <p>Dữ liệu lưu ngay trên máy bạn. Mẹ không lưu trên mây, mẹ chỉ lưu trong tim.</p>
     </footer>
   </div>
 
@@ -269,14 +269,14 @@
   <div class="modal-overlay" id="shareModal">
     <div class="modal">
       <button class="modal-close" id="shareClose" title="Đóng">✕</button>
-      <h3>Khoe "thành tích" bị mẹ phán 📸</h3>
+      <h3>Khoe "thành tích" bị mẹ phán</h3>
       <div class="share-preview">
         <canvas id="shareCanvas" width="1000" height="1000"></canvas>
       </div>
       <div class="share-actions">
-        <button id="shareNative" class="share-act primary">📤 Chia sẻ ngay</button>
-        <button id="shareDownload" class="share-act">⬇️ Tải ảnh</button>
-        <button id="shareCopy" class="share-act">📋 Copy caption</button>
+        <button id="shareNative" class="share-act primary">Chia sẻ ngay</button>
+        <button id="shareDownload" class="share-act">Tải ảnh</button>
+        <button id="shareCopy" class="share-act">Copy caption</button>
       </div>
       <div class="share-social">
         <a id="shareFb" class="social-link fb" target="_blank" rel="noopener">f Facebook</a>
@@ -307,7 +307,7 @@
   <div class="modal-overlay" id="editModal">
     <div class="modal">
       <button class="modal-close" id="editClose" title="Đóng">✕</button>
-      <h3>Sửa khoản này ✏️</h3>
+      <h3>Sửa khoản này</h3>
       <div class="field">
         <label for="editAmount">Số tiền</label>
         <input type="text" id="editAmount" inputmode="numeric" autocomplete="off" />
@@ -323,8 +323,8 @@
       <div class="field" id="editEssentialField">
         <label>Thiết yếu?</label>
         <div class="essential-toggle" id="editEssentialToggle">
-          <button class="ess-btn" data-essential="false">😋 Không</button>
-          <button class="ess-btn" data-essential="true">🧾 Có</button>
+          <button class="ess-btn" data-essential="false">Không</button>
+          <button class="ess-btn" data-essential="true">Có</button>
         </div>
       </div>
       <button id="editSaveBtn" class="add-btn">Lưu thay đổi</button>
@@ -335,14 +335,14 @@
   <div class="modal-overlay" id="summaryModal">
     <div class="modal">
       <button class="modal-close" id="summaryClose" title="Đóng">✕</button>
-      <h3 id="summaryTitle">Tổng kết tháng 📅</h3>
+      <h3 id="summaryTitle">Tổng kết tháng</h3>
       <div class="share-preview">
         <canvas id="summaryCanvas" width="1000" height="1000"></canvas>
       </div>
       <div class="share-actions">
-        <button id="summaryShare" class="share-act primary">📤 Chia sẻ</button>
-        <button id="summaryDownload" class="share-act">⬇️ Tải ảnh</button>
-        <button id="summaryCopy" class="share-act">📋 Copy</button>
+        <button id="summaryShare" class="share-act primary">Chia sẻ</button>
+        <button id="summaryDownload" class="share-act">Tải ảnh</button>
+        <button id="summaryCopy" class="share-act">Copy</button>
       </div>
     </div>
   </div>
@@ -351,27 +351,27 @@
   <div class="settings-page" id="settingsPage">
     <aside class="settings-nav">
       <div class="settings-nav-head">
-        <h2 id="settingsTitle">⚙️ Cài đặt</h2>
+        <h2 id="settingsTitle">Cài đặt</h2>
         <button id="settingsClose" class="settings-close-btn" title="Quay lại">✕</button>
       </div>
       <nav id="settingsNav">
-        <button class="snav-item active" data-panel="catbudget">🎯 <span>Hạn mức danh mục</span></button>
-        <button class="snav-item" data-panel="currency">💱 <span>Đơn vị tiền tệ</span></button>
-        <button class="snav-item" data-panel="recurring">🔁 <span>Chi tiêu định kỳ</span></button>
-        <button class="snav-item" data-panel="data">💾 <span>Dữ liệu &amp; sao lưu</span></button>
-        <button class="snav-item" data-panel="scold">✍️ <span>Câu mắng tự viết</span></button>
-        <button class="snav-item" data-panel="char">🎭 <span>Tạo nhân vật riêng</span></button>
-        <button class="snav-item" data-panel="ai">🤖 <span>Chế độ AI</span></button>
+        <button class="snav-item active" data-panel="catbudget"><span>Hạn mức danh mục</span></button>
+        <button class="snav-item" data-panel="currency"><span>Đơn vị tiền tệ</span></button>
+        <button class="snav-item" data-panel="recurring"><span>Chi tiêu định kỳ</span></button>
+        <button class="snav-item" data-panel="data"><span>Dữ liệu &amp; sao lưu</span></button>
+        <button class="snav-item" data-panel="scold"><span>Câu mắng tự viết</span></button>
+        <button class="snav-item" data-panel="char"><span>Tạo nhân vật riêng</span></button>
+        <button class="snav-item" data-panel="ai"><span>Chế độ AI</span></button>
       </nav>
     </aside>
     <div class="settings-content">
       <section class="settings-panel active" id="panel-catbudget">
-        <h2 class="panel-title">🎯 Hạn mức theo từng danh mục</h2>
+        <h2 class="panel-title">Hạn mức theo từng danh mục</h2>
         <div class="catbudget-body" id="catBudgetBody"></div>
       </section>
 
       <section class="settings-panel" id="panel-currency">
-        <h2 class="panel-title">💱 Đơn vị tiền tệ</h2>
+        <h2 class="panel-title">Đơn vị tiền tệ</h2>
         <div class="settings-body">
           <select id="currencySelect">
             <option value="VND">₫ VND - Việt Nam Đồng</option>
@@ -386,7 +386,7 @@
       </section>
 
       <section class="settings-panel" id="panel-recurring">
-        <h2 class="panel-title">🔁 Chi tiêu định kỳ (tiền nhà, internet...)</h2>
+        <h2 class="panel-title">Chi tiêu định kỳ (tiền nhà, internet...)</h2>
         <div class="recurring-body">
           <p class="settings-note">Khai báo khoản cố định hằng tháng. Mỗi tháng mẹ sẽ nhắc và ghi giúp con.</p>
           <div class="recurring-form">
@@ -400,18 +400,18 @@
       </section>
 
       <section class="settings-panel" id="panel-data">
-        <h2 class="panel-title">💾 Dữ liệu &amp; sao lưu</h2>
+        <h2 class="panel-title">Dữ liệu &amp; sao lưu</h2>
         <div class="settings-body">
           <p class="settings-note">Dữ liệu chỉ nằm trên máy này. Xuất ra file để sao lưu hoặc chuyển sang máy/điện thoại khác.</p>
-          <button id="exportBtn" class="data-btn">⬇️ Xuất dữ liệu (.json)</button>
-          <button id="importBtn" class="data-btn">⬆️ Nhập dữ liệu từ file</button>
+          <button id="exportBtn" class="data-btn">Xuất dữ liệu (.json)</button>
+          <button id="importBtn" class="data-btn">Nhập dữ liệu từ file</button>
           <input type="file" id="importFile" accept="application/json,.json" hidden />
-          <button id="resetBtn" class="data-btn danger">🧨 Xóa toàn bộ &amp; cài đặt lại</button>
+          <button id="resetBtn" class="data-btn danger">Xóa toàn bộ &amp; cài đặt lại</button>
         </div>
       </section>
 
       <section class="settings-panel" id="panel-scold">
-        <h2 class="panel-title">✍️ Câu mắng tự viết</h2>
+        <h2 class="panel-title">Câu mắng tự viết</h2>
         <div class="settings-body">
           <p class="settings-note">Thêm câu mắng của riêng bạn. Chúng sẽ được trộn vào lúc bạn tiêu hoang.</p>
           <div class="inline-form">
@@ -423,7 +423,7 @@
       </section>
 
       <section class="settings-panel" id="panel-char">
-        <h2 class="panel-title">🎭 Tạo nhân vật riêng</h2>
+        <h2 class="panel-title">Tạo nhân vật riêng</h2>
         <div class="settings-body">
           <p class="settings-note">Tự tạo nhân vật với tên, emoji và câu thoại riêng. Mỗi dòng là một câu.</p>
           <div class="inline-form">
@@ -432,13 +432,13 @@
           </div>
           <textarea id="charScold" rows="3" placeholder="Câu mắng khi tiêu hoang (mỗi dòng 1 câu)"></textarea>
           <textarea id="charPraise" rows="2" placeholder="Câu khen khi tiết kiệm (mỗi dòng 1 câu)"></textarea>
-          <button id="addCharBtn" class="data-btn">➕ Tạo nhân vật</button>
+          <button id="addCharBtn" class="data-btn">Tạo nhân vật</button>
           <ul class="chip-list" id="charList"></ul>
         </div>
       </section>
 
       <section class="settings-panel" id="panel-ai">
-        <h2 class="panel-title">🤖 Chế độ AI — để mẹ chửi sáng tạo</h2>
+        <h2 class="panel-title">Chế độ AI — để mẹ chửi sáng tạo</h2>
         <div class="ai-body">
           <p class="ai-note">
             Bật để mẹ (và các nhân vật) tự nghĩ câu mắng riêng cho từng khoản, không lặp lại.
@@ -459,7 +459,7 @@
   <div class="modal-overlay" id="begModal">
     <div class="modal">
       <button class="modal-close" id="begClose" title="Đóng">✕</button>
-      <h3>💸 Xin tiền mẹ</h3>
+      <h3>Xin tiền mẹ</h3>
       <p class="settings-note">Muốn mua món xa xỉ? Trình bày ra xem mẹ có duyệt không nhé. Mẹ đang giận thì khó xin lắm đấy.</p>
       <div class="field">
         <label for="begItem">Muốn mua gì?</label>
@@ -469,9 +469,9 @@
         <label for="begAmount">Hết bao nhiêu?</label>
         <input type="text" id="begAmount" inputmode="numeric" placeholder="VD: 25.000.000" autocomplete="off" />
       </div>
-      <button id="begAskBtn" class="add-btn">🙏 Thuyết phục mẹ</button>
+      <button id="begAskBtn" class="add-btn">Thuyết phục mẹ</button>
       <div class="beg-result" id="begResult"></div>
-      <button id="begLogBtn" class="data-btn" style="display:none;">✍️ Ghi khoản này vào sổ</button>
+      <button id="begLogBtn" class="data-btn" style="display:none;">Ghi khoản này vào sổ</button>
     </div>
   </div>
 

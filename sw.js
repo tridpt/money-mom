@@ -1,5 +1,5 @@
 // Service Worker cho Mẹ Thiên Hạ - cache để chạy offline
-const CACHE = "me-thien-ha-v15";
+const CACHE = "me-thien-ha-v16";
 const ASSETS = [
   "./",
   "./index.html",

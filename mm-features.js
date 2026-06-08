@@ -828,7 +828,7 @@ function drawSummaryCard(year, month, s) {
 
 function openSummary(year, month) {
   const s = getMonthSummary(year, month);
-  el.summaryTitle.textContent = `Tổng kết Tháng ${month + 1}/${year} 📅`;
+  el.summaryTitle.textContent = `Tổng kết Tháng ${month + 1}/${year}`;
   drawSummaryCard(year, month, s);
   summaryCaption = `Tổng kết Tháng ${month + 1}/${year} của tôi trên Mẹ Thiên Hạ 💸\nĐã tiêu ${formatVND(s.expense)}, bỏ heo ${formatVND(s.saving)}.\n"${summaryVerdict(s)}"\nThử đi: ${APP_URL}`;
   el.summaryModal.classList.add("show");
@@ -890,4 +890,4 @@ function dailyReminder() {
     setTimeout(() => showToast("📝 Hôm nay khai báo chi tiêu chưa con? Đừng có giấu mẹ nha!", null), 3000);
   }
 }
-
+
