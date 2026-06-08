@@ -1,11 +1,17 @@
 // Service Worker cho Mẹ Thiên Hạ - cache để chạy offline
-const CACHE = "me-thien-ha-v14";
+const CACHE = "me-thien-ha-v15";
 const ASSETS = [
   "./",
   "./index.html",
   "./styles.css",
   "./messages.js",
-  "./app.js",
+  "./mm-core.js",
+  "./mm-reactions.js",
+  "./mm-actions.js",
+  "./mm-features.js",
+  "./mm-ui.js",
+  "./mm-events.js",
+  "./mm-init.js",
   "./manifest.json",
   "./icon-192.png",
   "./icon-512.png",

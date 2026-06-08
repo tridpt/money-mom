@@ -66,12 +66,21 @@ money-mom/
 ├── index.html      # Giao diện
 ├── styles.css      # Phối màu, animation, responsive
 ├── messages.js     # Kho câu thoại các nhân vật (VI + EN)
-├── app.js          # Logic: state, render, biểu đồ, PWA, i18n...
+├── mm-core.js      # State, DOM, helpers, âm thanh, nhân vật
+├── mm-reactions.js # Bộ não phản ứng: khịa theo ngữ cảnh, tâm trạng
+├── mm-actions.js   # Ghi/sửa/xóa giao dịch, chia sẻ ảnh
+├── mm-features.js  # Biểu đồ, huy hiệu, mục tiêu, định kỳ, AI, tổng kết
+├── mm-ui.js        # Theme, PWA, onboarding, i18n, game hóa, mini-game
+├── mm-events.js    # Gắn sự kiện
+├── mm-init.js      # Khởi tạo app
 ├── manifest.json   # Khai báo PWA
 ├── sw.js           # Service worker (offline)
+├── start.bat       # Double-click để chạy server (Windows)
 ├── icon-*.png      # Icon app
 └── screenshots/    # Ảnh quảng bá / chụp màn hình
 ```
+
+> Các file `mm-*.js` được nạp tuần tự (xem `index.html`) và chia sẻ chung biến toàn cục — không dùng module ES để giữ đơn giản.
 
 ## 🛠️ Công nghệ
 
@@ -85,7 +94,7 @@ Mọi dữ liệu (giao dịch, lương, cài đặt) lưu trong `localStorage` 
 
 - Backend proxy cho AI (giấu key, dùng chung)
 - Push notification nhắc nhở khi đóng app
-- Tách `app.js` thành nhiều module
+- Đồng bộ dữ liệu đa thiết bị
 
 ## 📄 License
 
