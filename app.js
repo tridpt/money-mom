@@ -705,19 +705,76 @@ function bigEssentialRoast(transaction, vars) {
   return null;
 }
 
+// Phản ứng thu nhập / tiết kiệm theo bậc tiền (VND)
+const SAVING_TIERS = [
+  { min: 50000000, lines: [
+    "Bỏ heo {amount}?! Con của mẹ giàu thật rồi! Mẹ tự hào muốn rơi nước mắt!",
+    "{amount} vô heo đất luôn á?! Mẹ phải khoe khắp họ mới được!",
+    "Trời ơi {amount}! Cứ đà này mẹ về hưu sớm nhờ con được rồi!",
+  ]},
+  { min: 5000000, lines: [
+    "Bỏ ống {amount}? Khá lắm con! Cứ thế này là mua được nhà đấy.",
+    "{amount} tiết kiệm cơ à? Mẹ bắt đầu tin tưởng con thật rồi nha.",
+    "Giỏi! {amount} đâu phải con số nhỏ, mẹ ghi nhận công lao.",
+  ]},
+  { min: 500000, lines: [
+    "Bỏ heo {amount}? Cũng được đấy, biết lo xa rồi con.",
+    "{amount} à? Tạm ổn, cố thêm chút nữa nha con.",
+  ]},
+  { min: 50000, lines: [
+    "Bỏ ống {amount}? Ờ... có còn hơn không.",
+    "{amount} thôi à? Thôi cũng tính là cố gắng.",
+  ]},
+  { min: 0, lines: [
+    "Bỏ heo {amount}? Lẻ tẻ quá mẹ chả buồn khen con à.",
+    "{amount} mà cũng bỏ ống? Thôi, kiến tha lâu đầy tổ.",
+  ]},
+];
+
+const INCOME_TIERS = [
+  { min: 50000000, lines: [
+    "{amount}?! Con trúng số hay được thừa kế gì thế con?!",
+    "Ối giời ơi {amount}! Con giấu mẹ làm ăn gì mà đỉnh vậy?!",
+    "{amount} một lúc?! Mẹ chóng mặt vì tự hào luôn nè!",
+  ]},
+  { min: 5000000, lines: [
+    "{amount} hả? Khá đấy con, làm ăn được rồi đó.",
+    "Thu {amount}? Mẹ yên tâm phần nào, nhớ giữ cho kỹ nha.",
+  ]},
+  { min: 500000, lines: [
+    "Có {amount} về à? Cũng tốt, góp gió thành bão con.",
+    "{amount}? Được đấy, đừng tiêu liền là mẹ mừng.",
+  ]},
+  { min: 50000, lines: [
+    "{amount} thôi à? Ờ, kiếm được đồng nào hay đồng nấy.",
+    "Có mấy đồng {amount} cũng ghi à? Thôi cũng siêng.",
+  ]},
+  { min: 0, lines: [
+    "{amount}? Lẻ tẻ vậy cũng khai, mẹ ghi cho vui thôi nha.",
+    "Thu {amount}? Mẹ còn chả buồn ngẩng đầu lên con à.",
+  ]},
+];
+
+function pickByAmount(tiers, amount, vars) {
+  for (const t of tiers) { if (amount >= t.min) return pickMessage(t.lines, vars); }
+  return pickMessage(tiers[tiers.length - 1].lines, vars);
+}
+
 function reactTo(transaction) {
   const m = getMood(state.mood);
   const vars = { amount: formatVND(transaction.amount), note: transaction.note };
   let text, tone, sound;
 
   if (transaction.type === "saving") {
-    text = pickMessage(m.praise, vars);
-    tone = "praise";
-    sound = "praise";
+    text = state.lang === "en" ? pickMessage(m.praise, vars) : pickByAmount(SAVING_TIERS, transaction.amount, vars);
+    const big = transaction.amount >= 500000;
+    tone = big ? "praise" : null;
+    sound = big ? "praise" : null;
   } else if (transaction.type === "income") {
-    text = pickMessage(m.income, vars);
-    tone = "praise";
-    sound = "praise";
+    text = state.lang === "en" ? pickMessage(m.income, vars) : pickByAmount(INCOME_TIERS, transaction.amount, vars);
+    const big = transaction.amount >= 500000;
+    tone = big ? "praise" : null;
+    sound = big ? "praise" : null;
   } else {
     // expense
     if (transaction.essential) {
