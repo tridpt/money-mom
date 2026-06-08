@@ -217,5 +217,173 @@ const COMBO_LINES = {
 };
 function comboLine(combo) {
   // Chỉ hiện đúng tại các mốc combo (cho cảm giác sự kiện)
-  return COMBO_LINES[combo] || null;
+  const table = (typeof state !== "undefined" && state.lang === "en") ? COMBO_LINES_EN : COMBO_LINES;
+  return table[combo] || null;
 }
+
+
+// =====================================================================
+// English message sets (for language = "en")
+// =====================================================================
+const MESSAGES_EN = {
+  mom: {
+    label: "😤 Strict Mom",
+    avatar: "👩‍🦰",
+    scold: [
+      "You earn peanuts but spend like a CEO, huh?",
+      "Keep spending and you'll be eating dirt by month-end.",
+      "Money doesn't grow on trees, you know that, right?",
+      "Kids your age are buying houses, you bought {note}.",
+      "{amount} on this? Mom is fainting.",
+      "Don't call me when you're broke and hungry later.",
+      "Others save for gold, you save up debt.",
+      "{note}? Spending again. Mom is so disappointed.",
+    ],
+    essential: [
+      "Fine, this one's necessary. I'll let it slide.",
+      "Okay, it's essential. But don't make a habit of it.",
+      "Alright, approved. But I'm still counting every dong.",
+    ],
+    income: [
+      "Money's in. Hold onto it, don't go wild.",
+      "{amount}? Not bad. Now learn to keep it.",
+      "Good, you can earn. Now learn to save too.",
+    ],
+    praise: [
+      "Oh, thinking about your future now, are we?",
+      "My child saving money? I must be dreaming.",
+      "Saved {amount}? I'm almost in tears.",
+      "Good. Finally getting smart, aren't you.",
+    ],
+    idle: "So? Log your spending so I can start nagging.",
+  },
+  ex: {
+    label: "💔 Pragmatic Ex",
+    avatar: "💅",
+    scold: [
+      "You spent like this when we dated too. Still broke. Coincidence?",
+      "Bought {note}? No wonder I left.",
+      "{amount} for that? That's why your wallet's as empty as your promises.",
+      "My new partner invests in stocks. You invest in bubble tea.",
+      "Great at spending money. Shame you never spent it on me.",
+      "You're impressively, consistently broke.",
+    ],
+    essential: [
+      "This one's reasonable. Rare moment of sense.",
+      "Okay this is actually needed. First time you spent with a brain.",
+      "Fine, approved this once. Don't get used to it.",
+    ],
+    income: [
+      "Money's in. Too bad it's years too late.",
+      "{amount} now? Where was this effort back then?",
+      "Got money, now keep it. Don't let it leave like I did.",
+    ],
+    praise: [
+      "Oh, saving now? A bit late, isn't it.",
+      "Saved {amount}? If only you were like this when we dated.",
+      "So mature now. Shame I'm not around to see it.",
+    ],
+    idle: "Long time. Heard you're still spending recklessly?",
+  },
+  boss: {
+    label: "💼 Stingy Boss",
+    avatar: "🤵",
+    scold: [
+      "Spend like this and forget your raise next month.",
+      "{amount} for {note}? Are you even profitable yet?",
+      "I pay you to save, not to splurge.",
+      "Cut costs. Starting with this {note}.",
+      "Spending hard. Pity you don't budget like that at work.",
+    ],
+    essential: [
+      "Reasonable expense, approved. Keep the receipt.",
+      "Fine, essential cost. First sensible spend I've seen.",
+      "Approved this once. Don't make it routine.",
+    ],
+    income: [
+      "Income's in. Set aside an emergency fund.",
+      "{amount}? Good. Now make your money work.",
+      "Reinvest it, don't burn it like usual.",
+    ],
+    praise: [
+      "Finally, some cash-flow discipline. Noted.",
+      "Saved {amount}? Your financial sense is improving.",
+      "Good. Keep this up and you might make manager.",
+    ],
+    idle: "Where's your weekly spending report? I'm waiting.",
+  },
+  neighbor: {
+    label: "🏠 Nosy Neighbor",
+    avatar: "🧕",
+    scold: [
+      "Oh my, you bought {note}? Wait till I tell the whole street!",
+      "The Tran kid saved up and bought a car. And you...",
+      "{amount} at once? I could buy a week of groceries with that.",
+      "Spend like this and you'll stay single, I'm telling you.",
+      "I see those delivery packages arriving, you know!",
+    ],
+    essential: [
+      "Ah, that's actually needed. I won't say more.",
+      "Yes, essentials are fine, dear. I support that.",
+      "Reasonable. I know a cheaper shop, by the way.",
+    ],
+    income: [
+      "Oh you got paid? Good for you, now keep it safe!",
+      "{amount}? Nice! I'll brag about you to the neighbors.",
+      "Money's in, now think about settling down, dear.",
+    ],
+    praise: [
+      "Oh you're saving now? Let me tell everyone the good news!",
+      "Saved {amount}? Better than most kids on this street.",
+      "There you go, dear. I'll speak well of you.",
+    ],
+    idle: "Dear, how's your spending these days? Do tell.",
+  },
+  dad: {
+    label: "🧔 Cold Dad",
+    avatar: "🧔",
+    scold: [
+      "Spent {amount} on {note}. I won't say anything. Just disappointed.",
+      "You handle it yourself. I warned you.",
+      "Silence. This receipt says enough.",
+      "The money I gave wasn't for this.",
+      "You're grown. I won't repeat myself.",
+    ],
+    essential: [
+      "This is needed. I agree.",
+      "Fine. Reasonable expense.",
+      "Thoughtful spending. Good.",
+    ],
+    income: [
+      "Money's in. Keep it. Don't brag.",
+      "{amount}. Good. I'm quietly pleased.",
+      "Earning is step one. Keeping it is harder.",
+    ],
+    praise: [
+      "You saved. I nod.",
+      "Set aside {amount}. I won't say much. But well done.",
+      "Good. I worry a little less now.",
+    ],
+    idle: "I'm watching what you spend. Be careful.",
+  },
+};
+
+const COMBO_LINES_EN = {
+  3: "🔥 Combo x3! Three splurges in a row, do you ever stop?",
+  5: "🔥🔥 Combo x5! Burning money like a pro, huh?",
+  7: "🔥🔥🔥 Combo x7! Nothing can save this wallet now!",
+  10: "💀 COMBO x10! Peak recklessness. I give up on you!",
+};
+
+const OVER_BUDGET_LINES_EN = [
+  "AND YOU'VE BLOWN PAST THIS MONTH'S BUDGET! I'm furious!",
+  "Budget's busted. Now you really will be eating dirt!",
+  "How many times have I said it — you're over budget!",
+  "Did I set that budget for fun? You've blown past it!",
+];
+
+// Nhãn danh mục tiếng Anh
+const CATEGORY_LABELS_EN = {
+  food: "Food", shopping: "Shopping", transport: "Transport", bills: "Bills",
+  fun: "Fun", health: "Health", edu: "Education", other: "Other",
+};

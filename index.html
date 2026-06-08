@@ -24,8 +24,10 @@
         </div>
       </div>
       <div class="topbar-actions">
+        <button id="langBtn" class="icon-btn" title="Đổi ngôn ngữ / Language">🌐</button>
         <button id="themeBtn" class="icon-btn" title="Đổi giao diện sáng/tối">🌙</button>
         <button id="installBtn" class="icon-btn" title="Cài đặt app" style="display:none;">⬇️</button>
+        <button id="ttsBtn" class="icon-btn" title="Mẹ đọc to câu mắng">🗣️</button>
         <button id="soundBtn" class="icon-btn" title="Bật/tắt âm thanh">🔊</button>
         <button id="moodBtn" class="mood-btn" title="Đổi tính cách">
           <span id="moodLabel">😤 Mẹ nghiêm khắc</span>
@@ -137,6 +139,33 @@
             <button id="importBtn" class="data-btn">⬆️ Nhập dữ liệu từ file</button>
             <input type="file" id="importFile" accept="application/json,.json" hidden />
             <button id="resetBtn" class="data-btn danger">🧨 Xóa toàn bộ &amp; cài đặt lại</button>
+          </div>
+        </details>
+
+        <details class="settings-box" id="customScoldBox">
+          <summary>✍️ Câu mắng tự viết</summary>
+          <div class="settings-body">
+            <p class="settings-note">Thêm câu mắng của riêng bạn. Chúng sẽ được trộn vào lúc bạn tiêu hoang.</p>
+            <div class="inline-form">
+              <input type="text" id="scoldInput" placeholder="VD: Tiêu thế bao giờ giàu?" autocomplete="off" />
+              <button id="addScoldBtn">Thêm</button>
+            </div>
+            <ul class="chip-list" id="scoldList"></ul>
+          </div>
+        </details>
+
+        <details class="settings-box" id="customCharBox">
+          <summary>🎭 Tạo nhân vật riêng</summary>
+          <div class="settings-body">
+            <p class="settings-note">Tự tạo nhân vật với tên, emoji và câu thoại riêng. Mỗi dòng là một câu.</p>
+            <div class="inline-form">
+              <input type="text" id="charEmoji" placeholder="Emoji" maxlength="4" style="max-width:70px;" />
+              <input type="text" id="charName" placeholder="Tên nhân vật (VD: Crush)" autocomplete="off" />
+            </div>
+            <textarea id="charScold" rows="3" placeholder="Câu mắng khi tiêu hoang (mỗi dòng 1 câu)"></textarea>
+            <textarea id="charPraise" rows="2" placeholder="Câu khen khi tiết kiệm (mỗi dòng 1 câu)"></textarea>
+            <button id="addCharBtn" class="data-btn">➕ Tạo nhân vật</button>
+            <ul class="chip-list" id="charList"></ul>
           </div>
         </details>
 

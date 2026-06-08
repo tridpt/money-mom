@@ -9,9 +9,13 @@ let state = {
   salary: 0,
   budget: 0,
   soundOn: true,
+  ttsOn: false,          // mẹ đọc to câu mắng
+  lang: "vi",            // vi | en
   theme: "dark",        // dark | light
   onboardingDone: false,
   currency: "VND",
+  customScolds: [],      // câu mắng do người dùng tự viết
+  customChars: [],       // nhân vật tự tạo [{id,label,avatar,scold:[],praise:[]}]
   goal: { name: "", target: 0 },     // mục tiêu tiết kiệm
   catBudgets: {},                    // hạn mức theo danh mục { catId: số }
   recurring: [],                     // chi tiêu định kỳ [{id, name, amount, category, day, lastApplied}]
@@ -45,6 +49,40 @@ const CATEGORIES = [
 ];
 const CAT_MAP = Object.fromEntries(CATEGORIES.map((c) => [c.id, c]));
 function getCat(id) { return CAT_MAP[id] || CAT_MAP.other; }
+
+// ---- Nhân vật: hợp nhất built-in + tự tạo ----
+// Trả về object nhân vật đã chuẩn hóa (đủ scold/essential/income/praise/idle/label/avatar)
+function baseMessages() {
+  return state.lang === "en" ? MESSAGES_EN : MESSAGES;
+}
+function getMood(id) {
+  const BM = baseMessages();
+  if (BM[id]) return BM[id];
+  const c = (state.customChars || []).find((x) => x.id === id);
+  if (c) {
+    const fb = BM.mom;
+    return {
+      label: c.label,
+      avatar: c.avatar || "🧑",
+      scold: c.scold && c.scold.length ? c.scold : fb.scold,
+      essential: c.essential && c.essential.length ? c.essential : fb.essential,
+      income: c.income && c.income.length ? c.income : fb.income,
+      praise: c.praise && c.praise.length ? c.praise : fb.praise,
+      idle: c.idle || `Xin chào, tôi là ${c.label}.`,
+    };
+  }
+  return BM.mom;
+}
+
+function catLabel(id) {
+  if (state.lang === "en" && typeof CATEGORY_LABELS_EN !== "undefined") return CATEGORY_LABELS_EN[id] || getCat(id).label;
+  return getCat(id).label;
+}
+
+// Danh sách id nhân vật để xoay vòng (built-in + custom)
+function moodList() {
+  return MOOD_ORDER.concat((state.customChars || []).map((c) => c.id));
+}
 
 // ---- DOM ----
 const $ = (id) => document.getElementById(id);
@@ -171,6 +209,18 @@ const el = {
   summaryShare: $("summaryShare"),
   summaryDownload: $("summaryDownload"),
   summaryCopy: $("summaryCopy"),
+  // Mới: TTS, ngôn ngữ, câu mắng & nhân vật tự tạo
+  ttsBtn: $("ttsBtn"),
+  langBtn: $("langBtn"),
+  scoldInput: $("scoldInput"),
+  addScoldBtn: $("addScoldBtn"),
+  scoldList: $("scoldList"),
+  charEmoji: $("charEmoji"),
+  charName: $("charName"),
+  charScold: $("charScold"),
+  charPraise: $("charPraise"),
+  addCharBtn: $("addCharBtn"),
+  charList: $("charList"),
 };
 
 // Trạng thái bộ lọc & sửa
@@ -385,7 +435,7 @@ function renderHistory() {
     const sign = t.type === "income" ? "+" : "-";
     const cat = t.type === "expense" ? getCat(t.category) : null;
     const icon = cat ? cat.icon : TYPE_ICON[t.type];
-    const metaLabel = cat ? cat.label : TYPE_LABEL[t.type];
+    const metaLabel = cat ? catLabel(t.category) : TYPE_LABEL[t.type];
 
     li.innerHTML = `
       <span class="item-icon">${icon}</span>
@@ -408,7 +458,7 @@ function escapeHtml(str) {
 }
 
 function renderMood() {
-  const m = MESSAGES[state.mood];
+  const m = getMood(state.mood);
   el.moodLabel.textContent = m.label;
   el.momAvatar.textContent = m.avatar;
 }
@@ -427,6 +477,33 @@ function speak(text, tone) {
   void el.momAvatar.offsetWidth; // reflow để chạy lại animation
   el.momAvatar.classList.add("shake");
   showToast(text, tone);
+  speakAloud(text);
+}
+
+// Đọc to bằng giọng nói (Web Speech API)
+let viVoice = null;
+function pickVoice() {
+  if (!("speechSynthesis" in window)) return;
+  const voices = speechSynthesis.getVoices();
+  viVoice = voices.find((v) => /vi[-_]?VN/i.test(v.lang) || /vietnam/i.test(v.name)) ||
+            voices.find((v) => v.lang && v.lang.toLowerCase().startsWith(state.lang)) || null;
+}
+if ("speechSynthesis" in window) {
+  pickVoice();
+  speechSynthesis.onvoiceschanged = pickVoice;
+}
+
+function speakAloud(text) {
+  if (!state.ttsOn || !("speechSynthesis" in window)) return;
+  try {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = state.lang === "en" ? "en-US" : "vi-VN";
+    if (viVoice) u.voice = viVoice;
+    u.rate = 1.05;
+    u.pitch = 1.1;
+    speechSynthesis.speak(u);
+  } catch (e) { /* bỏ qua */ }
 }
 
 function showToast(text, tone) {
@@ -439,7 +516,7 @@ function showToast(text, tone) {
 }
 
 function reactTo(transaction) {
-  const m = MESSAGES[state.mood];
+  const m = getMood(state.mood);
   const vars = { amount: formatVND(transaction.amount), note: transaction.note };
   let text, tone, sound;
 
@@ -458,7 +535,7 @@ function reactTo(transaction) {
       tone = null;
       sound = null;
     } else {
-      text = pickMessage(m.scold, vars);
+      text = pickMessage(m.scold.concat(state.customScolds || []), vars);
       tone = "scold";
       sound = "scold";
     }
@@ -506,7 +583,8 @@ const OVER_BUDGET_LINES = [
   "Mẹ đặt hạn mức cho có lệ thôi à? Vượt rồi kìa!",
 ];
 function OVER_BUDGET_LINE() {
-  return OVER_BUDGET_LINES[Math.floor(Math.random() * OVER_BUDGET_LINES.length)];
+  const arr = state.lang === "en" ? OVER_BUDGET_LINES_EN : OVER_BUDGET_LINES;
+  return arr[Math.floor(Math.random() * arr.length)];
 }
 
 // ---- Actions ----
@@ -603,7 +681,7 @@ function renderCategoryGrid() {
     const btn = document.createElement("button");
     btn.className = "cat-btn" + (c.id === state.ui.category ? " active" : "");
     btn.dataset.cat = c.id;
-    btn.innerHTML = `<span class="cat-emoji">${c.icon}</span>${c.label}`;
+    btn.innerHTML = `<span class="cat-emoji">${c.icon}</span>${catLabel(c.id)}`;
     el.categoryGrid.appendChild(btn);
   }
 }
@@ -645,11 +723,12 @@ function setEssential(val) {
 }
 
 function toggleMood() {
-  const idx = MOOD_ORDER.indexOf(state.mood);
-  state.mood = MOOD_ORDER[(idx + 1) % MOOD_ORDER.length];
+  const list = moodList();
+  const idx = list.indexOf(state.mood);
+  state.mood = list[(idx + 1) % list.length];
   save();
   renderMood();
-  const m = MESSAGES[state.mood];
+  const m = getMood(state.mood);
   lastReaction = { text: m.idle, tone: null, mood: state.mood };
   speak(m.idle, null);
 }
@@ -676,7 +755,7 @@ function drawShareCard() {
   const canvas = el.shareCanvas;
   const ctx = canvas.getContext("2d");
   const W = canvas.width, H = canvas.height;
-  const m = MESSAGES[lastReaction.mood] || MESSAGES.mom;
+  const m = getMood(lastReaction.mood) || MESSAGES.mom;
 
   // Nền gradient
   const grad = ctx.createLinearGradient(0, 0, W, H);
@@ -728,7 +807,7 @@ function drawShareCard() {
 }
 
 function getCaption() {
-  return `"${lastReaction.text}"\n\n— ${MESSAGES[lastReaction.mood].label} phán 😤\nQuản lý tài chính kiểu bị mắng mới chịu tiết kiệm 💸\nThử đi: ${APP_URL}`;
+  return `"${lastReaction.text}"\n\n— ${getMood(lastReaction.mood).label} phán 😤\nQuản lý tài chính kiểu bị mắng mới chịu tiết kiệm 💸\nThử đi: ${APP_URL}`;
 }
 
 function canvasToBlob() {
@@ -935,7 +1014,7 @@ function renderPie() {
     totals[cid] = (totals[cid] || 0) + t.amount;
   }
   const segments = CATEGORIES
-    .map((c) => ({ label: c.label, value: totals[c.id] || 0, color: c.color, icon: c.icon }))
+    .map((c) => ({ label: catLabel(c.id), value: totals[c.id] || 0, color: c.color, icon: c.icon }))
     .filter((s) => s.value > 0)
     .sort((a, b) => b.value - a.value);
   const total = segments.reduce((s, x) => s + x.value, 0);
@@ -1267,26 +1346,59 @@ function renderCatBudgets() {
       : (used > 0 ? `Đã tiêu ${formatVND(used)} (chưa đặt hạn mức)` : "");
     row.innerHTML = `
       <span class="cb-icon">${c.icon}</span>
-      <span class="cb-label">${c.label}</span>
+      <span class="cb-label">${catLabel(c.id)}</span>
       <input type="text" inputmode="numeric" data-cat="${c.id}" value="${limit ? new Intl.NumberFormat("vi-VN").format(limit) : ""}" placeholder="Không giới hạn" />
       <div class="cb-used">${usedText}</div>`;
     el.catBudgetBody.appendChild(row);
   }
 }
 
-// ---- Tiền tệ ----
-function setCurrency(cur) {
-  if (!CURRENCIES[cur]) return;
+// ---- Tiền tệ (quy đổi tỷ giá thật) ----
+function applyRateToAmounts(rate) {
+  state.transactions.forEach((t) => { t.amount = Math.round(t.amount * rate); });
+  state.salary = Math.round(state.salary * rate);
+  state.budget = Math.round(state.budget * rate);
+  if (state.goal) state.goal.target = Math.round((state.goal.target || 0) * rate);
+  for (const k in state.catBudgets) state.catBudgets[k] = Math.round(state.catBudgets[k] * rate);
+  (state.recurring || []).forEach((r) => { r.amount = Math.round(r.amount * rate); });
+}
+
+function finalizeCurrency(cur) {
   state.currency = cur;
   save();
   el.currencySelect.value = cur;
-  renderStats();
-  renderHistory();
-  renderBudget();
-  renderAnalytics();
-  renderGoal();
-  renderCatBudgets();
-  renderRecurring();
+  reRenderAll();
+}
+
+async function setCurrency(cur) {
+  if (!CURRENCIES[cur] || cur === state.currency) { el.currencySelect.value = state.currency; return; }
+  const from = state.currency;
+  const hasData = state.transactions.length > 0 || state.salary > 0 || state.budget > 0;
+
+  if (!hasData) { finalizeCurrency(cur); return; }
+
+  const convert = confirm(`Quy đổi toàn bộ số tiền từ ${from} sang ${cur} theo tỷ giá hiện tại?\n\nOK = quy đổi giá trị · Cancel = chỉ đổi ký hiệu hiển thị.`);
+  if (!convert) { finalizeCurrency(cur); return; }
+
+  try {
+    el.currencySelect.disabled = true;
+    const res = await fetch(`https://open.er-api.com/v6/latest/${from}`);
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const data = await res.json();
+    const rate = data && data.rates && data.rates[cur];
+    if (!rate) throw new Error("Không có tỷ giá");
+    applyRateToAmounts(rate);
+    finalizeCurrency(cur);
+    speak(`Đã quy đổi sang ${cur} theo tỷ giá ${from}→${cur} ≈ ${rate}.`, null);
+  } catch (e) {
+    if (confirm(`Không lấy được tỷ giá (${e.message}). Chỉ đổi ký hiệu mà không quy đổi giá trị?`)) {
+      finalizeCurrency(cur);
+    } else {
+      el.currencySelect.value = state.currency;
+    }
+  } finally {
+    el.currencySelect.disabled = false;
+  }
 }
 
 // ---- Chi tiêu định kỳ ----
@@ -1375,7 +1487,7 @@ function populateFilterCategories() {
   for (const c of CATEGORIES) {
     const opt = document.createElement("option");
     opt.value = c.id;
-    opt.textContent = `${c.icon} ${c.label}`;
+    opt.textContent = `${c.icon} ${catLabel(c.id)}`;
     el.filterCategory.appendChild(opt);
   }
 }
@@ -1403,7 +1515,7 @@ function renderEditCategory() {
     const btn = document.createElement("button");
     btn.className = "cat-btn" + (c.id === editing.category ? " active" : "");
     btn.dataset.cat = c.id;
-    btn.innerHTML = `<span class="cat-emoji">${c.icon}</span>${c.label}`;
+    btn.innerHTML = `<span class="cat-emoji">${c.icon}</span>${catLabel(c.id)}`;
     el.editCategoryGrid.appendChild(btn);
   }
 }
@@ -1598,7 +1710,7 @@ function drawSummaryCard(year, month, s) {
     ctx.textAlign = "center";
     ctx.fillStyle = "#9a9bc0";
     ctx.font = "500 36px 'Be Vietnam Pro', sans-serif";
-    ctx.fillText(`Tốn nhất: ${getCat(s.topCat).icon} ${getCat(s.topCat).label} (${formatVND(s.topVal)})`, W / 2, y + 10);
+    ctx.fillText(`Tốn nhất: ${getCat(s.topCat).icon} ${catLabel(s.topCat)} (${formatVND(s.topVal)})`, W / 2, y + 10);
   }
 
   // Lời phán (wrap)
@@ -1822,6 +1934,170 @@ function fireConfetti() {
   confettiRAF = requestAnimationFrame(frame);
 }
 
+// ---- Text-to-speech toggle ----
+function toggleTTS() {
+  state.ttsOn = !state.ttsOn;
+  save();
+  el.ttsBtn.textContent = state.ttsOn ? "🗣️" : "🤐";
+  el.ttsBtn.classList.toggle("muted", !state.ttsOn);
+  if (state.ttsOn) speakAloud(getMood(state.mood).idle);
+  else if ("speechSynthesis" in window) speechSynthesis.cancel();
+}
+
+// ---- Câu mắng tự viết ----
+function renderScoldList() {
+  el.scoldList.innerHTML = "";
+  (state.customScolds || []).forEach((s, i) => {
+    const li = document.createElement("li");
+    li.className = "chip-item";
+    li.innerHTML = `<span>${escapeHtml(s)}</span><button data-i="${i}" title="Xóa">✕</button>`;
+    el.scoldList.appendChild(li);
+  });
+}
+function addScold() {
+  const v = el.scoldInput.value.trim();
+  if (!v) return;
+  state.customScolds.push(v);
+  save();
+  renderScoldList();
+  el.scoldInput.value = "";
+}
+function deleteScold(i) {
+  state.customScolds.splice(i, 1);
+  save();
+  renderScoldList();
+}
+
+// ---- Nhân vật tự tạo ----
+function renderCharList() {
+  el.charList.innerHTML = "";
+  (state.customChars || []).forEach((c) => {
+    const li = document.createElement("li");
+    li.className = "chip-item";
+    li.innerHTML = `<span>${c.avatar || "🧑"} ${escapeHtml(c.label.replace(c.avatar + " ", ""))} (${(c.scold || []).length} câu)</span><button data-id="${c.id}" title="Xóa">✕</button>`;
+    el.charList.appendChild(li);
+  });
+}
+function addChar() {
+  const name = el.charName.value.trim();
+  const emoji = el.charEmoji.value.trim() || "🧑";
+  const scold = el.charScold.value.split("\n").map((s) => s.trim()).filter(Boolean);
+  const praise = el.charPraise.value.split("\n").map((s) => s.trim()).filter(Boolean);
+  if (!name) { alert("Nhập tên nhân vật đã."); return; }
+  if (scold.length === 0) { alert("Thêm ít nhất 1 câu mắng cho nhân vật."); return; }
+  state.customChars.push({
+    id: "custom_" + Date.now().toString(36),
+    label: emoji + " " + name,
+    avatar: emoji,
+    scold,
+    praise,
+  });
+  save();
+  renderCharList();
+  el.charName.value = ""; el.charEmoji.value = ""; el.charScold.value = ""; el.charPraise.value = "";
+  showToast(`Đã tạo nhân vật "${name}"! Bấm nút đổi tính cách để gặp.`, "praise");
+}
+function deleteChar(id) {
+  state.customChars = state.customChars.filter((c) => c.id !== id);
+  if (state.mood === id) { state.mood = "mom"; renderMood(); }
+  save();
+  renderCharList();
+}
+
+// ---- Đa ngôn ngữ ----
+const I18N = {
+  vi: {
+    tagline: "Tiêu hoang là bị mắng. Tiết kiệm thì... cũng bị nói.",
+    addEntry: "Ghi một khoản mới", expense: "🛍️ Chi tiêu", income: "💰 Thu nhập", saving: "🐷 Tiết kiệm",
+    amount: "Số tiền", note: "Ghi chú", category: "Danh mục", essentialQ: "Khoản này có thiết yếu không?",
+    essNo: "😋 Không thiết yếu", essYes: "🧾 Thiết yếu", addBtn: "Ghi sổ & nghe mẹ phán 👂",
+    ledger: "Sổ chi tiêu", clearAll: "🗑️ Xóa hết", searchPh: "🔍 Tìm theo ghi chú...",
+    allTypes: "Tất cả loại", allCats: "Mọi danh mục",
+    balance: "Số dư trong ví", paidIn: "Đã thu", spent: "Đã tiêu", piggy: "Heo đất",
+    streak: "🔥 Không tiêu hoang", combo: "💥 Combo tiêu hoang",
+    salary: "💼 Lương tháng của bạn", budget: "🎯 Hạn mức chi tiêu tháng này", goal: "🏆 Mục tiêu tiết kiệm",
+    amountPh: "VD: 60.000", notePh: "VD: Mua cốc trà sữa", save: "Lưu",
+    achievements: "Huy hiệu & thành tích 🏆",
+  },
+  en: {
+    tagline: "Overspend and get scolded. Save and... still get a remark.",
+    addEntry: "Add a new entry", expense: "🛍️ Expense", income: "💰 Income", saving: "🐷 Saving",
+    amount: "Amount", note: "Note", category: "Category", essentialQ: "Is this essential?",
+    essNo: "😋 Non-essential", essYes: "🧾 Essential", addBtn: "Log it & hear the verdict 👂",
+    ledger: "Transactions", clearAll: "🗑️ Clear all", searchPh: "🔍 Search by note...",
+    allTypes: "All types", allCats: "All categories",
+    balance: "Wallet balance", paidIn: "Income", spent: "Spent", piggy: "Piggy bank",
+    streak: "🔥 No-splurge streak", combo: "💥 Splurge combo",
+    salary: "💼 Your monthly salary", budget: "🎯 This month's budget", goal: "🏆 Savings goal",
+    amountPh: "e.g. 60,000", notePh: "e.g. Bubble tea", save: "Save",
+    achievements: "Badges & achievements 🏆",
+  },
+};
+function tr(k) { return (I18N[state.lang] && I18N[state.lang][k]) || I18N.vi[k] || k; }
+
+function applyLang() {
+  document.documentElement.lang = state.lang;
+  el.langBtn.textContent = state.lang === "en" ? "🇬🇧" : "🇻🇳";
+  const setText = (sel, k) => { const e = document.querySelector(sel); if (e) e.textContent = tr(k); };
+  const setPh = (id, k) => { if (el[id]) el[id].placeholder = tr(k); };
+
+  setText(".tagline", "tagline");
+  setText(".form-card h2", "addEntry");
+  const tabs = document.querySelectorAll("#typeTabs .type-tab");
+  if (tabs[0]) tabs[0].textContent = tr("expense");
+  if (tabs[1]) tabs[1].textContent = tr("income");
+  if (tabs[2]) tabs[2].textContent = tr("saving");
+  setText('label[for="amountInput"]', "amount");
+  setText('label[for="noteInput"]', "note");
+  setText("#categoryField label", "category");
+  setText("#essentialField label", "essentialQ");
+  const ess = document.querySelectorAll("#essentialToggle .ess-btn");
+  if (ess[0]) ess[0].textContent = tr("essNo");
+  if (ess[1]) ess[1].textContent = tr("essYes");
+  setText("#addBtn", "addBtn");
+  setText(".history-card h2", "ledger");
+  setText("#clearBtn", "clearAll");
+  setPh("searchInput", "searchPh");
+  setPh("amountInput", "amountPh");
+  setPh("noteInput", "notePh");
+
+  // Stat labels theo thứ tự
+  const labels = document.querySelectorAll(".stats .stat-label");
+  const order = ["balance", "paidIn", "spent", "piggy", "streak", "combo"];
+  labels.forEach((lb, i) => { if (order[i]) lb.textContent = tr(order[i]); });
+
+  setText('label[for="salaryInput"]', "salary");
+  setText('label[for="budgetInput"]', "budget");
+  setText(".goal-box > label", "goal");
+  setText(".ach-card h2", "achievements");
+
+  // Cập nhật option lọc
+  if (el.filterType) {
+    el.filterType.options[0].textContent = tr("allTypes");
+    el.filterType.options[1].textContent = tr("expense");
+    el.filterType.options[2].textContent = tr("income");
+    el.filterType.options[3].textContent = tr("saving");
+  }
+  if (el.filterCategory && el.filterCategory.options[0]) el.filterCategory.options[0].textContent = tr("allCats");
+}
+
+function toggleLang() {
+  state.lang = state.lang === "en" ? "vi" : "en";
+  save();
+  applyLang();
+  pickVoice();
+  // Render lại phần phụ thuộc ngôn ngữ
+  renderMood();
+  renderCategoryGrid();
+  renderHistory();
+  renderAnalytics();
+  renderCatBudgets();
+  populateFilterCategories();
+  el.filterCategory.value = filters.category;
+  lastReaction = { text: getMood(state.mood).idle, tone: null, mood: state.mood };
+  el.momMessage.textContent = lastReaction.text;
+}
+
 // ---- Events ----
 function bindEvents() {
   el.addBtn.addEventListener("click", addTransaction);
@@ -1977,6 +2253,25 @@ function bindEvents() {
   el.summaryShare.addEventListener("click", shareSummary);
   el.summaryDownload.addEventListener("click", downloadSummary);
   el.summaryCopy.addEventListener("click", copySummary);
+
+  // TTS & ngôn ngữ
+  el.ttsBtn.addEventListener("click", toggleTTS);
+  el.langBtn.addEventListener("click", toggleLang);
+
+  // Câu mắng tự viết
+  el.addScoldBtn.addEventListener("click", addScold);
+  el.scoldInput.addEventListener("keydown", (e) => { if (e.key === "Enter") addScold(); });
+  el.scoldList.addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-i]");
+    if (btn) deleteScold(parseInt(btn.dataset.i, 10));
+  });
+
+  // Nhân vật tự tạo
+  el.addCharBtn.addEventListener("click", addChar);
+  el.charList.addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-id]");
+    if (btn) deleteChar(btn.dataset.id);
+  });
 }
 
 // ---- Init ----
@@ -2016,9 +2311,15 @@ function init() {
   // Theme + PWA
   applyTheme();
   setupPWA();
+  // TTS, ngôn ngữ, câu mắng & nhân vật tự tạo
+  el.ttsBtn.textContent = state.ttsOn ? "🗣️" : "🤐";
+  el.ttsBtn.classList.toggle("muted", !state.ttsOn);
+  renderScoldList();
+  renderCharList();
+  applyLang();
   // Lời chào mở màn
-  lastReaction = { text: MESSAGES[state.mood].idle, tone: null, mood: state.mood };
-  el.momMessage.textContent = MESSAGES[state.mood].idle;
+  lastReaction = { text: getMood(state.mood).idle, tone: null, mood: state.mood };
+  el.momMessage.textContent = getMood(state.mood).idle;
   // Nhắc chi tiêu định kỳ tới hạn
   remindRecurringDue();
   // Nhắc khai báo hằng ngày

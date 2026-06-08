@@ -29,6 +29,9 @@ Thay vì những biểu đồ thu chi khô khan, Money Mom quản lý ví tiền
 - 📅 **Tổng kết tháng tự động** kèm lời mẹ phán + ảnh chia sẻ.
 - 🔮 **Dự đoán cuối tháng**: "với đà này bạn sẽ tiêu hết X".
 - 📝 **Nhắc nhở hằng ngày** khai báo chi tiêu.
+- 🗣️ **Text-to-speech**: mẹ đọc to câu mắng bằng giọng nói.
+- ✍️ **Tự viết câu mắng** và 🎭 **tạo nhân vật riêng** (tên, emoji, câu thoại).
+- 🌐 **Song ngữ Việt / Anh** (giao diện chính + câu thoại nhân vật).
 - 💼 **Khai báo lương tháng** để được "so sánh" cho thấm.
 - 🎯 **Hạn mức chi tiêu tháng** + thanh tiến độ — vượt ngân sách là mẹ "nổi điên".
 - 🥧 **Biểu đồ tròn**: xem tiền đi đâu nhiều nhất theo danh mục (ăn uống, mua sắm, đi lại...).
@@ -71,10 +74,9 @@ Vanilla HTML/CSS/JavaScript. Không framework, không dependency.
 
 ## 💡 Ý tưởng phát triển
 
-- Text-to-speech: đọc to câu mắng
-- Đa ngôn ngữ (thêm tiếng Anh)
-- Quy đổi tỷ giá thật cho phần tiền tệ
 - Backend proxy cho AI (giấu key)
+- Push notification nhắc nhở khi đóng app
+- Dịch toàn bộ phần cài đặt nâng cao sang tiếng Anh
 
 ## 📄 License
 
