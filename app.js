@@ -15,6 +15,7 @@ let state = {
   goal: { name: "", target: 0 },     // mục tiêu tiết kiệm
   catBudgets: {},                    // hạn mức theo danh mục { catId: số }
   recurring: [],                     // chi tiêu định kỳ [{id, name, amount, category, day, lastApplied}]
+  lastSummaryMonth: "",              // tháng đã xem tổng kết (YYYY-M)
   mood: "mom", // mom | ex | boss | neighbor | dad
   combo: 0,        // số lần tiêu hoang liên tiếp
   maxCombo: 0,     // combo cao nhất từng đạt
@@ -156,6 +157,20 @@ const el = {
   editEssentialField: $("editEssentialField"),
   editEssentialToggle: $("editEssentialToggle"),
   editSaveBtn: $("editSaveBtn"),
+  // Mới: dữ liệu & tổng kết & dự đoán
+  exportBtn: $("exportBtn"),
+  importBtn: $("importBtn"),
+  importFile: $("importFile"),
+  resetBtn: $("resetBtn"),
+  prediction: $("prediction"),
+  summaryBtn: $("summaryBtn"),
+  summaryModal: $("summaryModal"),
+  summaryClose: $("summaryClose"),
+  summaryTitle: $("summaryTitle"),
+  summaryCanvas: $("summaryCanvas"),
+  summaryShare: $("summaryShare"),
+  summaryDownload: $("summaryDownload"),
+  summaryCopy: $("summaryCopy"),
 };
 
 // Trạng thái bộ lọc & sửa
@@ -1023,6 +1038,7 @@ function renderAnalytics() {
   renderPie();
   renderBar();
   renderCompare();
+  renderPrediction();
 }
 
 // ---- Streak & combo ----
@@ -1424,6 +1440,248 @@ function closeEdit() {
   editing.id = null;
 }
 
+// ---- Dữ liệu: xuất / nhập / reset ----
+function reRenderAll() {
+  renderMood();
+  renderSalary();
+  renderStats();
+  renderHistory();
+  renderBudget();
+  renderCategoryGrid();
+  renderAnalytics();
+  renderStreakCombo();
+  renderAchievements();
+  renderGoal();
+  renderCatBudgets();
+  renderRecurring();
+  el.soundBtn.textContent = state.soundOn ? "🔊" : "🔇";
+  el.soundBtn.classList.toggle("muted", !state.soundOn);
+  if (state.budget > 0) el.budgetInput.value = new Intl.NumberFormat("vi-VN").format(state.budget);
+  if (state.goal.name) el.goalName.value = state.goal.name;
+  if (state.goal.target > 0) el.goalTarget.value = new Intl.NumberFormat("vi-VN").format(state.goal.target);
+  el.currencySelect.value = state.currency;
+  el.aiEnabled.checked = !!state.ai.enabled;
+  el.aiKey.value = state.ai.key || "";
+  applyTheme();
+}
+
+function exportData() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  const d = new Date();
+  const stamp = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
+  a.href = url;
+  a.download = `me-thien-ha-backup-${stamp}.json`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  speak("Đã xuất dữ liệu ra file. Cất kỹ vào nha con!", null);
+}
+
+function importData(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const parsed = JSON.parse(reader.result);
+      if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.transactions)) {
+        throw new Error("Cấu trúc file không đúng");
+      }
+      if (!confirm("Nhập dữ liệu này sẽ GHI ĐÈ toàn bộ dữ liệu hiện tại. Tiếp tục?")) return;
+      state = { ...state, ...parsed, ui: { ...state.ui, ...(parsed.ui || {}) } };
+      state.transactions.forEach((t) => { if (t.type === "expense" && !t.category) t.category = "other"; });
+      save();
+      reRenderAll();
+      speak("Đã nhập dữ liệu thành công! Mẹ nhớ hết tội cũ của con rồi đấy.", null);
+    } catch (e) {
+      alert("Không đọc được file: " + e.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+function resetAll() {
+  if (!confirm("XÓA TOÀN BỘ dữ liệu và cài đặt? Không thể hoàn tác!")) return;
+  if (!confirm("Chắc chắn chưa? Mẹ hỏi lại lần cuối đấy.")) return;
+  localStorage.removeItem(STORE_KEY);
+  location.reload();
+}
+
+// ---- Dự đoán cuối tháng ----
+function renderPrediction() {
+  const now = new Date();
+  const day = now.getDate();
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const spent = monthSum("expense", now.getFullYear(), now.getMonth());
+  el.prediction.className = "prediction";
+  if (spent <= 0 || day < 2) { el.prediction.textContent = ""; return; }
+  const projected = (spent / day) * daysInMonth;
+  let msg = `🔮 Dự đoán: với đà này, hết tháng con sẽ tiêu khoảng ${formatVND(projected)} (đã tiêu ${formatVND(spent)} sau ${day} ngày).`;
+  if (state.budget > 0) {
+    if (projected > state.budget) {
+      el.prediction.classList.add("over");
+      msg += ` Vượt hạn mức ${formatVND(projected - state.budget)} — phanh lại đi con!`;
+    } else {
+      el.prediction.classList.add("warn");
+      msg += ` Vẫn trong hạn mức, ráng giữ nha.`;
+    }
+  }
+  el.prediction.textContent = msg;
+}
+
+// ---- Tổng kết tháng ----
+let summaryCaption = "";
+
+function getMonthSummary(year, month) {
+  let expense = 0, income = 0, saving = 0, splurge = 0;
+  const catTotals = {};
+  for (const t of state.transactions) {
+    const d = new Date(t.ts);
+    if (d.getFullYear() !== year || d.getMonth() !== month) continue;
+    if (t.type === "expense") {
+      expense += t.amount;
+      if (!t.essential) splurge += t.amount;
+      const c = t.category || "other";
+      catTotals[c] = (catTotals[c] || 0) + t.amount;
+    } else if (t.type === "income") income += t.amount;
+    else if (t.type === "saving") saving += t.amount;
+  }
+  let topCat = null, topVal = 0;
+  for (const k in catTotals) { if (catTotals[k] > topVal) { topVal = catTotals[k]; topCat = k; } }
+  return { expense, income, saving, splurge, topCat, topVal, hasData: (expense + income + saving) > 0 };
+}
+
+function summaryVerdict(s) {
+  if (!s.hasData) return "Tháng đó con chẳng ghi gì cả. Lười cả ghi sổ thì tiết kiệm kiểu gì?";
+  if (s.saving > s.splurge && s.saving > 0) return "Tiết kiệm nhiều hơn tiêu hoang. Mẹ bất ngờ đấy, giỏi lắm!";
+  if (s.expense > 0 && s.splurge > s.expense * 0.6) return "Tiêu hoang quá trời. Tháng này liệu hồn nha con!";
+  return "Cũng tạm. Nhưng mẹ tin con làm tốt hơn được.";
+}
+
+function drawSummaryCard(year, month, s) {
+  const canvas = el.summaryCanvas;
+  const ctx = canvas.getContext("2d");
+  const W = canvas.width, H = canvas.height;
+  const grad = ctx.createLinearGradient(0, 0, W, H);
+  grad.addColorStop(0, "#2a1c4a");
+  grad.addColorStop(0.5, "#1c1d33");
+  grad.addColorStop(1, "#3a1330");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = "#7c5cff";
+  ctx.lineWidth = 10;
+  ctx.strokeRect(20, 20, W - 40, H - 40);
+
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#ff5d8f";
+  ctx.font = "800 60px 'Be Vietnam Pro', sans-serif";
+  ctx.fillText(`Tổng kết Tháng ${month + 1}/${year}`, W / 2, 130);
+
+  const rows = [
+    ["💰 Đã thu", formatVND(s.income), "#36d399"],
+    ["🛍️ Đã tiêu", formatVND(s.expense), "#ff6b6b"],
+    ["😋 Tiêu hoang", formatVND(s.splurge), "#ffd166"],
+    ["🐷 Bỏ heo", formatVND(s.saving), "#7c5cff"],
+  ];
+  let y = 250;
+  ctx.font = "600 46px 'Be Vietnam Pro', sans-serif";
+  for (const [label, val, color] of rows) {
+    ctx.textAlign = "left";
+    ctx.fillStyle = "#ecedf7";
+    ctx.fillText(label, 90, y);
+    ctx.textAlign = "right";
+    ctx.fillStyle = color;
+    ctx.fillText(val, W - 90, y);
+    y += 80;
+  }
+
+  if (s.topCat) {
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#9a9bc0";
+    ctx.font = "500 36px 'Be Vietnam Pro', sans-serif";
+    ctx.fillText(`Tốn nhất: ${getCat(s.topCat).icon} ${getCat(s.topCat).label} (${formatVND(s.topVal)})`, W / 2, y + 10);
+  }
+
+  // Lời phán (wrap)
+  ctx.fillStyle = "#ecedf7";
+  ctx.font = "700 44px 'Be Vietnam Pro', sans-serif";
+  const verdict = summaryVerdict(s);
+  const lines = wrapText(ctx, "“" + verdict + "”", W - 160);
+  let vy = y + 110;
+  for (const ln of lines.slice(0, 4)) { ctx.fillText(ln, W / 2, vy); vy += 58; }
+
+  ctx.fillStyle = "#ff5d8f";
+  ctx.font = "800 42px 'Be Vietnam Pro', sans-serif";
+  ctx.fillText("👩‍🦰 Mẹ Thiên Hạ", W / 2, H - 80);
+  ctx.fillStyle = "#9a9bc0";
+  ctx.font = "500 30px 'Be Vietnam Pro', sans-serif";
+  ctx.fillText("tridpt.github.io/money-mom", W / 2, H - 40);
+}
+
+function openSummary(year, month) {
+  const s = getMonthSummary(year, month);
+  el.summaryTitle.textContent = `Tổng kết Tháng ${month + 1}/${year} 📅`;
+  drawSummaryCard(year, month, s);
+  summaryCaption = `Tổng kết Tháng ${month + 1}/${year} của tôi trên Mẹ Thiên Hạ 💸\nĐã tiêu ${formatVND(s.expense)}, bỏ heo ${formatVND(s.saving)}.\n"${summaryVerdict(s)}"\nThử đi: ${APP_URL}`;
+  el.summaryModal.classList.add("show");
+}
+
+function openSummaryPrevMonth() {
+  const now = new Date();
+  const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  openSummary(prev.getFullYear(), prev.getMonth());
+}
+
+function autoMonthlySummary() {
+  const now = new Date();
+  const curMK = monthKey(now);
+  if (state.lastSummaryMonth === curMK) return;
+  const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const s = getMonthSummary(prev.getFullYear(), prev.getMonth());
+  state.lastSummaryMonth = curMK;
+  save();
+  if (s.hasData) {
+    setTimeout(() => openSummary(prev.getFullYear(), prev.getMonth()), 900);
+  }
+}
+
+async function shareSummary() {
+  try {
+    const blob = await new Promise((r) => el.summaryCanvas.toBlob(r, "image/png"));
+    const file = new File([blob], "tong-ket-thang.png", { type: "image/png" });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], text: summaryCaption, title: "Tổng kết tháng" });
+      return;
+    }
+    if (navigator.share) { await navigator.share({ text: summaryCaption, url: APP_URL }); return; }
+    downloadSummary();
+  } catch (e) { console.warn("Share summary:", e); }
+}
+
+async function downloadSummary() {
+  const blob = await new Promise((r) => el.summaryCanvas.toBlob(r, "image/png"));
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "tong-ket-thang.png"; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+async function copySummary() {
+  try {
+    await navigator.clipboard.writeText(summaryCaption);
+    el.summaryCopy.textContent = "✅ Đã copy!";
+    setTimeout(() => (el.summaryCopy.textContent = "📋 Copy"), 1800);
+  } catch (e) { alert(summaryCaption); }
+}
+
+// ---- Nhắc nhở hằng ngày ----
+function dailyReminder() {
+  const today = new Date().toDateString();
+  const logged = state.transactions.some((t) => new Date(t.ts).toDateString() === today);
+  if (!logged) {
+    setTimeout(() => showToast("📝 Hôm nay khai báo chi tiêu chưa con? Đừng có giấu mẹ nha!", null), 3000);
+  }
+}
+
 // ---- Theme sáng/tối ----
 function applyTheme() {
   document.documentElement.setAttribute("data-theme", state.theme);
@@ -1702,6 +1960,23 @@ function bindEvents() {
     if (btn) { editing.essential = btn.dataset.essential === "true"; renderEditEssential(); }
   });
   el.editSaveBtn.addEventListener("click", saveEdit);
+
+  // Dữ liệu: xuất / nhập / reset
+  el.exportBtn.addEventListener("click", exportData);
+  el.importBtn.addEventListener("click", () => el.importFile.click());
+  el.importFile.addEventListener("change", (e) => {
+    if (e.target.files && e.target.files[0]) importData(e.target.files[0]);
+    e.target.value = "";
+  });
+  el.resetBtn.addEventListener("click", resetAll);
+
+  // Tổng kết tháng
+  el.summaryBtn.addEventListener("click", openSummaryPrevMonth);
+  el.summaryClose.addEventListener("click", () => el.summaryModal.classList.remove("show"));
+  el.summaryModal.addEventListener("click", (e) => { if (e.target === el.summaryModal) el.summaryModal.classList.remove("show"); });
+  el.summaryShare.addEventListener("click", shareSummary);
+  el.summaryDownload.addEventListener("click", downloadSummary);
+  el.summaryCopy.addEventListener("click", copySummary);
 }
 
 // ---- Init ----
@@ -1746,9 +2021,13 @@ function init() {
   el.momMessage.textContent = MESSAGES[state.mood].idle;
   // Nhắc chi tiêu định kỳ tới hạn
   remindRecurringDue();
-  // Onboarding lần đầu
+  // Nhắc khai báo hằng ngày
+  dailyReminder();
+  // Onboarding lần đầu / tổng kết đầu tháng
   if (!state.onboardingDone) {
     setTimeout(openOnboard, 400);
+  } else {
+    autoMonthlySummary();
   }
 }
 

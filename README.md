@@ -25,6 +25,10 @@ Thay vì những biểu đồ thu chi khô khan, Money Mom quản lý ví tiền
 - ✏️ **Sửa giao dịch** đã ghi.
 - 🎯 **Hạn mức theo từng danh mục** (vd: ăn uống tối đa 2 triệu/tháng).
 - 💱 **Đổi đơn vị tiền tệ** (VND, USD, EUR, JPY, KRW, GBP).
+- 💾 **Xuất / nhập dữ liệu** ra file JSON để sao lưu và chuyển máy; reset toàn bộ.
+- 📅 **Tổng kết tháng tự động** kèm lời mẹ phán + ảnh chia sẻ.
+- 🔮 **Dự đoán cuối tháng**: "với đà này bạn sẽ tiêu hết X".
+- 📝 **Nhắc nhở hằng ngày** khai báo chi tiêu.
 - 💼 **Khai báo lương tháng** để được "so sánh" cho thấm.
 - 🎯 **Hạn mức chi tiêu tháng** + thanh tiến độ — vượt ngân sách là mẹ "nổi điên".
 - 🥧 **Biểu đồ tròn**: xem tiền đi đâu nhiều nhất theo danh mục (ăn uống, mua sắm, đi lại...).
@@ -67,10 +71,10 @@ Vanilla HTML/CSS/JavaScript. Không framework, không dependency.
 
 ## 💡 Ý tưởng phát triển
 
-- Xuất / nhập dữ liệu (JSON/CSV) để backup
-- Tổng kết cuối tháng tự động kèm lời mẹ phán
 - Text-to-speech: đọc to câu mắng
 - Đa ngôn ngữ (thêm tiếng Anh)
+- Quy đổi tỷ giá thật cho phần tiền tệ
+- Backend proxy cho AI (giấu key)
 
 ## 📄 License
 

@@ -129,6 +129,17 @@
           </div>
         </details>
 
+        <details class="settings-box" id="dataBox">
+          <summary>💾 Dữ liệu &amp; sao lưu</summary>
+          <div class="settings-body">
+            <p class="settings-note">Dữ liệu chỉ nằm trên máy này. Xuất ra file để sao lưu hoặc chuyển sang máy/điện thoại khác.</p>
+            <button id="exportBtn" class="data-btn">⬇️ Xuất dữ liệu (.json)</button>
+            <button id="importBtn" class="data-btn">⬆️ Nhập dữ liệu từ file</button>
+            <input type="file" id="importFile" accept="application/json,.json" hidden />
+            <button id="resetBtn" class="data-btn danger">🧨 Xóa toàn bộ &amp; cài đặt lại</button>
+          </div>
+        </details>
+
         <details class="ai-box" id="aiBox">
           <summary>🤖 Chế độ AI — để mẹ chửi sáng tạo</summary>
           <div class="ai-body">
@@ -245,8 +256,12 @@
       </div>
 
       <div class="chart-card compare">
-        <h2>Tháng này so với tháng trước 📈</h2>
+        <div class="chart-head">
+          <h2>Tháng này so với tháng trước 📈</h2>
+          <button id="summaryBtn" class="range-tab">📅 Tổng kết tháng trước</button>
+        </div>
         <div class="compare-grid" id="compareStats"></div>
+        <p class="prediction" id="prediction"></p>
         <div class="saving-rate">
           <div class="saving-rate-head">
             <span>Tỷ lệ tiết kiệm tháng này</span>
@@ -340,6 +355,22 @@
         </div>
       </div>
       <button id="editSaveBtn" class="add-btn">Lưu thay đổi</button>
+    </div>
+  </div>
+
+  <!-- Monthly summary modal -->
+  <div class="modal-overlay" id="summaryModal">
+    <div class="modal">
+      <button class="modal-close" id="summaryClose" title="Đóng">✕</button>
+      <h3 id="summaryTitle">Tổng kết tháng 📅</h3>
+      <div class="share-preview">
+        <canvas id="summaryCanvas" width="1000" height="1000"></canvas>
+      </div>
+      <div class="share-actions">
+        <button id="summaryShare" class="share-act primary">📤 Chia sẻ</button>
+        <button id="summaryDownload" class="share-act">⬇️ Tải ảnh</button>
+        <button id="summaryCopy" class="share-act">📋 Copy</button>
+      </div>
     </div>
   </div>
 
