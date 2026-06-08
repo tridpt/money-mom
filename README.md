@@ -8,15 +8,6 @@ Thay vì những biểu đồ thu chi khô khan, Money Mom quản lý ví tiền
 
 > Song ngữ 🇻🇳 / 🇬🇧 · Chạy offline (PWA) · Dữ liệu lưu hoàn toàn trên máy bạn.
 
-## 📸 Ảnh chụp màn hình
-
-<!-- Thay các ảnh dưới đây bằng ảnh chụp thật từ máy/điện thoại của bạn -->
-| Giao diện chính | Bị mẹ phán | Biểu đồ & thống kê |
-|:--:|:--:|:--:|
-| ![Trang chính](screenshots/main.png) | ![Bị mắng](screenshots/scold.png) | ![Thống kê](screenshots/charts.png) |
-
-> Chưa có ảnh thật? Mở app → chụp màn hình → lưu vào thư mục `screenshots/` với tên `main.png`, `scold.png`, `charts.png`.
-
 ## ✨ Tính năng
 
 **Cốt lõi**
