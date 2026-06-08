@@ -520,6 +520,133 @@ function showToast(text, tone) {
   }, 3800);
 }
 
+// ---- Phản ứng theo ngữ cảnh: khịa đúng món đồ + mức giá ----
+const KEYWORD_ROASTS = [
+  { kw: ["trà sữa", "tra sua", "milk tea", "bubble", "tobo", "gongcha", "phúc long", "phuc long"], lines: [
+    "Lại trà sữa? {amount} cho một cốc đường, tiểu đường chưa tới mà ví cạn tới nơi rồi con.",
+    "Trà sữa {amount}? Topping thì đầy mà tương lai thì rỗng con à.",
+    "{note} hết {amount}. Uống vô béo người, ví thì gầy trông thấy.",
+    "Một cốc {amount}? Con tưới đường vô đời mình hay tưới vô mộ cái ví vậy?",
+  ]},
+  { kw: ["cà phê", "ca phe", "coffee", "highlands", "starbucks", "cafe"], lines: [
+    "Cà phê {amount}? Tỉnh táo để làm gì khi ví đã ngủ quên rồi con.",
+    "{note} {amount}. Uống cho sang chứ tiền thì chua như cà phê không đường.",
+  ]},
+  { kw: ["ăn", "buffet", "lẩu", "lau", "nướng", "nuong", "nhà hàng", "nha hang", "order", "đồ ăn", "do an", "ship đồ", "ship do", "grab food", "foody"], lines: [
+    "{amount} cho một bữa {note}? No cái bụng, đói cái ví con ạ.",
+    "Ăn uống {amount}? Miệng sướng vài phút, ví khóc cả tháng.",
+    "{note} hết {amount} luôn? Con ăn tiền chứ ăn gì nữa đây.",
+  ]},
+  { kw: ["quần áo", "quan ao", "áo", "váy", "vay", "giày", "giay", "dép", "sneaker", "shopee", "lazada", "sale", "đồ", "shopping"], lines: [
+    "{note} {amount}? Tủ đồ thì đầy mà tài khoản thì trống huơ trống hoác.",
+    "Lại sale à? {amount} cho {note}. 'Tiết kiệm' kiểu mua nhiều để dành tiền ship hả con?",
+    "Mua {note} {amount}? Mặc đẹp đi đâu khi cuối tháng phải trốn nợ con.",
+  ]},
+  { kw: ["son", "mỹ phẩm", "my pham", "skincare", "nước hoa", "nuoc hoa", "kem", "makeup", "make up"], lines: [
+    "{note} {amount}? Mặt thì xinh mà ví thì xanh xao con à.",
+    "Làm đẹp {amount}? Đẹp để ai ngắm khi con suốt ngày ở nhà tránh chủ nợ.",
+  ]},
+  { kw: ["game", "nạp", "nap", "skin", "gacha", "liên quân", "lien quan", "steam", "genshin", "roll", "esim", "valorant"], lines: [
+    "Nạp game {amount}?! Skin đẹp mà đời thì chưa pass màn 'nghèo' đâu con.",
+    "{amount} cho {note}? Nhân vật trong game lên đồ, còn con thì lên... nợ.",
+    "Tiêu {amount} vào game? Thắng game thua đời, đáng không con?",
+  ]},
+  { kw: ["iphone", "điện thoại", "dien thoai", "laptop", "tai nghe", "ipad", "macbook", "airpod", "samsung", "tech", "máy", "may"], lines: [
+    "{note} {amount}?! Đồ thì xịn mà chủ nó thì sắp ăn mì gói cả tháng.",
+    "Mua {note} hết {amount}? Sống ảo sang chảnh, sống thật thì... thôi mẹ không nói.",
+  ]},
+  { kw: ["grab", "taxi", "xăng", "xang", "be", "gojek", "xe", "vé xe", "ship"], lines: [
+    "{amount} tiền {note}? Đi cho nhanh để về nhà ngồi tiếc tiền hả con.",
+    "Tiền xe {amount}? Đi bộ vài bước có chết đâu mà con sang vậy.",
+  ]},
+  { kw: ["bar", "rượu", "ruou", "bia", "nhậu", "nhau", "pub", "club", "cocktail", "beer"], lines: [
+    "{note} {amount}?! Uống cho vui rồi mai tỉnh dậy ví trống, đầu đau, đời buồn.",
+    "Nhậu {amount}? Men say vài tiếng, nợ tỉnh cả tháng con à.",
+  ]},
+  { kw: ["thuốc lá", "thuoc la", "vape", "pod"], lines: [
+    "{amount} cho {note}? Đốt tiền theo đúng nghĩa đen luôn con.",
+  ]},
+  { kw: ["quà", "qua", "crush", "người yêu", "nguoi yeu", "hoa", "gấu", "gau", "bạn gái", "bạn trai"], lines: [
+    "{amount} mua {note} cho người ta? Lỡ chia tay thì đòi lại được không con?",
+    "Tặng quà {amount}? Tình thì chưa chắc bền, nợ thì chắc chắn ở lại.",
+  ]},
+  { kw: ["phim", "vé", "ve", "concert", "vé phim", "rạp", "rap", "du lịch", "du lich", "khách sạn", "khach san", "vé máy bay"], lines: [
+    "{note} {amount}? Giải trí cho đã rồi về cày trả nợ nha con.",
+    "Đi chơi {amount}? Sống cho hiện tại, còn tương lai để mẹ lo chắc?",
+  ]},
+  { kw: ["mèo", "meo", "chó", "cho ", "thú cưng", "thu cung", "boss", "cám", "cat", "dog"], lines: [
+    "{amount} nuôi {note}? Boss sống sang hơn cả sen luôn con nhỉ.",
+  ]},
+];
+
+// So sánh giá với món ăn bình dân (chỉ cho VND)
+function priceQuip(amount) {
+  if (state.currency !== "VND") return null;
+  const units = [
+    { n: 45000, name: "tô phở" },
+    { n: 30000, name: "bữa cơm bụi" },
+    { n: 25000, name: "ổ bánh mì" },
+    { n: 15000, name: "gói mì tôm" },
+  ];
+  const candidates = units.filter((u) => amount >= u.n * 2);
+  if (!candidates.length) return null;
+  const u = candidates[Math.floor(Math.random() * candidates.length)];
+  const c = Math.round(amount / u.n);
+  const tmpl = [
+    `Số tiền này bằng ${c} ${u.name} đấy con!`,
+    `${formatVND(amount)} = ${c} ${u.name}. Ăn ${u.name} còn no, mua cái này thì no... nợ.`,
+    `Bằng đúng ${c} ${u.name} luôn á, mẹ xót dùm cái ví.`,
+  ];
+  return tmpl[Math.floor(Math.random() * tmpl.length)];
+}
+
+// Câu khịa theo bậc giá (khi không khớp từ khóa)
+const PRICE_TIERS = [
+  { min: 2000000, lines: [
+    "{amount} cho {note}?! Con mua đứt cả tháng tiền ăn của nhà mình rồi đấy!",
+    "{note} mà {amount}?! Đại gia phố núi đây rồi, lạy ngài.",
+  ]},
+  { min: 500000, lines: [
+    "{amount} cho {note}? Sang dữ ha. Tiền nhiều không tiêu được hết à con?",
+    "{note} hết {amount} lận? Mẹ làm mấy ngày mới ra từng đó đó con.",
+  ]},
+  { min: 150000, lines: [
+    "{note} {amount}? Đắt xắt ra... nợ con à.",
+    "{amount} cho {note}? Cũng chua đấy, liệu cơm gắp mắm đi con.",
+  ]},
+  { min: 0, lines: [
+    "{note} {amount}. Ít thôi nhưng góp gió thành bão nợ đó con.",
+    "{amount} cho {note}? Lẻ tẻ vậy mà cuối tháng cộng lại giật mình đấy.",
+  ]},
+];
+
+function priceTierLine(transaction, vars) {
+  for (const t of PRICE_TIERS) {
+    if (transaction.amount >= t.min) return pickMessage(t.lines, vars);
+  }
+  return pickMessage(PRICE_TIERS[PRICE_TIERS.length - 1].lines, vars);
+}
+
+// Dựng câu mắng theo ngữ cảnh món đồ + giá
+function buildContextualScold(transaction, vars) {
+  if (state.lang === "en") return null; // tạm thời chỉ tiếng Việt
+  const note = (transaction.note || "").toLowerCase();
+  let line = null;
+  // 1. Khớp từ khóa món đồ
+  if (note) {
+    for (const g of KEYWORD_ROASTS) {
+      if (g.kw.some((k) => note.includes(k))) { line = pickMessage(g.lines, vars); break; }
+    }
+  }
+  // 2. Không khớp -> khịa theo bậc giá (nếu có ghi chú)
+  if (!line && note) line = priceTierLine(transaction, vars);
+  if (!line) return null;
+  // 3. Đôi khi thêm câu so sánh giá cho đau
+  const quip = priceQuip(transaction.amount);
+  if (quip && Math.random() < 0.55) line += " " + quip;
+  return line;
+}
+
 function reactTo(transaction) {
   const m = getMood(state.mood);
   const vars = { amount: formatVND(transaction.amount), note: transaction.note };
@@ -540,7 +667,14 @@ function reactTo(transaction) {
       tone = null;
       sound = null;
     } else {
-      text = pickMessage(m.scold.concat(state.customScolds || []), vars);
+      // Ưu tiên câu khịa theo ngữ cảnh món đồ + giá; xen kẽ câu nhân vật/tự viết
+      const contextual = buildContextualScold(transaction, vars);
+      const pool = m.scold.concat(state.customScolds || []);
+      if (contextual && Math.random() < 0.8) {
+        text = contextual;
+      } else {
+        text = pickMessage(pool, vars);
+      }
       tone = "scold";
       sound = "scold";
     }
