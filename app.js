@@ -579,10 +579,12 @@ const KEYWORD_ROASTS = [
   ]},
 ];
 
-// So sánh giá với món ăn bình dân (chỉ cho VND)
+// So sánh giá với món ăn bình dân / vàng (chỉ cho VND)
 function priceQuip(amount) {
   if (state.currency !== "VND") return null;
   const units = [
+    { n: 80000000, name: "cây vàng" },
+    { n: 8000000, name: "chỉ vàng" },
     { n: 45000, name: "tô phở" },
     { n: 30000, name: "bữa cơm bụi" },
     { n: 25000, name: "ổ bánh mì" },
@@ -590,11 +592,12 @@ function priceQuip(amount) {
   ];
   const candidates = units.filter((u) => amount >= u.n * 2);
   if (!candidates.length) return null;
-  const u = candidates[Math.floor(Math.random() * candidates.length)];
+  // ưu tiên đơn vị lớn nhất phù hợp để con số không quá khủng
+  const u = candidates[0];
   const c = Math.round(amount / u.n);
   const tmpl = [
     `Số tiền này bằng ${c} ${u.name} đấy con!`,
-    `${formatVND(amount)} = ${c} ${u.name}. Ăn ${u.name} còn no, mua cái này thì no... nợ.`,
+    `${formatVND(amount)} = ${c} ${u.name}. Con tự cân nhắc đi.`,
     `Bằng đúng ${c} ${u.name} luôn á, mẹ xót dùm cái ví.`,
   ];
   return tmpl[Math.floor(Math.random() * tmpl.length)];
@@ -602,6 +605,18 @@ function priceQuip(amount) {
 
 // Câu khịa theo bậc giá (khi không khớp từ khóa)
 const PRICE_TIERS = [
+  { min: 1000000000, lines: [
+    "{amount} cho {note}?! Con trúng số hay đi cướp ngân hàng vậy con?!",
+    "{note} mà {amount}?! Cả họ nhà mình gom lại chưa chắc có từng đó đâu con!",
+  ]},
+  { min: 100000000, lines: [
+    "{amount} cho {note}?! Cả đời mẹ chưa cầm số tiền đó một lúc bao giờ!",
+    "{note} hết {amount}?! Con tiêu tiền hay tiêu hết tương lai vậy?",
+  ]},
+  { min: 10000000, lines: [
+    "{amount} cho {note}?! Con tưởng tiền là lá khô hả con ơi?",
+    "{note} {amount} luôn á?! Mẹ làm cả năm mới dành được từng đó đó!",
+  ]},
   { min: 2000000, lines: [
     "{amount} cho {note}?! Con mua đứt cả tháng tiền ăn của nhà mình rồi đấy!",
     "{note} mà {amount}?! Đại gia phố núi đây rồi, lạy ngài.",
@@ -647,6 +662,49 @@ function buildContextualScold(transaction, vars) {
   return line;
 }
 
+// Khịa khoản THIẾT YẾU khi số tiền vô lý so với danh mục
+const BIG_ESSENTIAL = {
+  transport: { min: 1500000, lines: [
+    "Đi lại gì mà {amount}? Con thuê nguyên hãng taxi à con?!",
+    "{amount} tiền đi lại?! Hay mua luôn cái xe cho rồi con!",
+  ]},
+  bills: { min: 4000000, lines: [
+    "Hóa đơn {amount}?! Con cắm điện nuôi trại đào bitcoin hả?",
+    "{amount} tiền hóa đơn?! Cả tòa nhà xài chung à con?",
+  ]},
+  edu: { min: 30000000, lines: [
+    "Học phí {amount}?! Học làm tiến sĩ hay mua luôn cái trường vậy con?",
+    "{amount} cho học tập?! Tri thức vô giá nhưng cái giá này thì... mẹ tái mặt.",
+  ]},
+  health: { min: 15000000, lines: [
+    "{amount} tiền sức khỏe?! Con thay nguyên bộ nội tạng à?",
+    "Sức khỏe {amount}?! Quý thật nhưng nghe xong mẹ cần đi khám tim.",
+  ]},
+  bills_generic: { min: 5000000, lines: [
+    "{amount} cho khoản 'thiết yếu' này?! Thiết yếu gì mà bằng cả gia tài vậy con?",
+    "Thiết yếu mà {amount} lận?! Con chắc cái này 'cần' chứ không phải 'thèm' chứ?",
+  ]},
+};
+
+function bigEssentialRoast(transaction, vars) {
+  const amt = transaction.amount;
+  const cat = transaction.category;
+  const conf = BIG_ESSENTIAL[cat];
+  if (conf && amt >= conf.min) {
+    let line = pickMessage(conf.lines, vars);
+    if (amt >= 100000000) line += " Mà {amount} thì... con in tiền hả con?!".replace("{amount}", vars.amount);
+    return line;
+  }
+  // Không thuộc danh mục trên nhưng số tiền quá lớn cho một khoản thiết yếu
+  if (amt >= BIG_ESSENTIAL.bills_generic.min) {
+    let line = pickMessage(BIG_ESSENTIAL.bills_generic.lines, vars);
+    const quip = priceQuip(amt);
+    if (quip && Math.random() < 0.6) line += " " + quip;
+    return line;
+  }
+  return null;
+}
+
 function reactTo(transaction) {
   const m = getMood(state.mood);
   const vars = { amount: formatVND(transaction.amount), note: transaction.note };
@@ -663,9 +721,16 @@ function reactTo(transaction) {
   } else {
     // expense
     if (transaction.essential) {
-      text = pickMessage(m.essential, vars);
-      tone = null;
-      sound = null;
+      const bigRoast = state.lang === "en" ? null : bigEssentialRoast(transaction, vars);
+      if (bigRoast) {
+        text = bigRoast;
+        tone = "scold";
+        sound = "over";
+      } else {
+        text = pickMessage(m.essential, vars);
+        tone = null;
+        sound = null;
+      }
     } else {
       // Ưu tiên câu khịa theo ngữ cảnh món đồ + giá; xen kẽ câu nhân vật/tự viết
       const contextual = buildContextualScold(transaction, vars);
