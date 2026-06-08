@@ -2464,6 +2464,8 @@ function bindEvents() {
   // Trang cài đặt
   el.settingsBtn.addEventListener("click", openSettings);
   el.settingsClose.addEventListener("click", closeSettings);
+  const settingsBtnTop = document.getElementById("settingsBtnTop");
+  if (settingsBtnTop) settingsBtnTop.addEventListener("click", openSettings);
   el.settingsNav.addEventListener("click", (e) => {
     const btn = e.target.closest(".snav-item");
     if (btn) switchPanel(btn.dataset.panel);
