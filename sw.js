@@ -1,5 +1,5 @@
 // Service Worker cho Mẹ Thiên Hạ - cache để chạy offline
-const CACHE = "me-thien-ha-v6";
+const CACHE = "me-thien-ha-v7";
 const ASSETS = [
   "./",
   "./index.html",
@@ -36,18 +36,16 @@ self.addEventListener("fetch", (e) => {
   // Không cache lời gọi API (vd OpenAI)
   if (url.origin !== self.location.origin) return;
 
+  // Ưu tiên mạng: luôn lấy bản mới nhất khi online, lỗi mạng mới dùng cache
   e.respondWith(
-    caches.match(req).then((cached) => {
-      const fetchPromise = fetch(req)
-        .then((res) => {
-          if (res && res.status === 200) {
-            const copy = res.clone();
-            caches.open(CACHE).then((c) => c.put(req, copy));
-          }
-          return res;
-        })
-        .catch(() => cached);
-      return cached || fetchPromise;
-    })
+    fetch(req)
+      .then((res) => {
+        if (res && res.status === 200) {
+          const copy = res.clone();
+          caches.open(CACHE).then((c) => c.put(req, copy));
+        }
+        return res;
+      })
+      .catch(() => caches.match(req))
   );
 });
