@@ -84,6 +84,31 @@ function moodList() {
   return MOOD_ORDER.concat((state.customChars || []).map((c) => c.id));
 }
 
+// ---- Đại từ theo nhân vật (đổi "con/mẹ" trong câu dùng chung) ----
+const VOICE = {
+  mom: null, // giữ nguyên con/mẹ
+  ex: { "con": "anh", "mẹ": "em" },
+  boss: { "con": "em", "mẹ": "anh" },
+  neighbor: { "con": "cháu", "mẹ": "bác" },
+  dad: { "con": "con", "mẹ": "bố" },
+};
+function replaceWord(text, word, repl) {
+  const re = new RegExp("(^|[^\\p{L}])(" + word + ")(?![\\p{L}])", "giu");
+  return text.replace(re, (full, pre, w) => {
+    const cap = w[0] === w[0].toUpperCase();
+    const r = cap ? repl.charAt(0).toUpperCase() + repl.slice(1) : repl;
+    return pre + r;
+  });
+}
+function applyVoice(text) {
+  if (!text || state.lang === "en") return text;
+  let map = VOICE[state.mood];
+  if (state.mood && state.mood.indexOf("custom_") === 0) map = { "con": "bạn", "mẹ": "tôi" };
+  if (!map) return text; // mom: giữ nguyên
+  for (const w in map) text = replaceWord(text, w, map[w]);
+  return text;
+}
+
 // ---- DOM ----
 const $ = (id) => document.getElementById(id);
 const el = {
@@ -477,6 +502,7 @@ function renderSalary() {
 
 // ---- Mom reaction ----
 function speak(text, tone) {
+  text = applyVoice(text);
   el.momMessage.textContent = text;
   el.momAvatar.classList.remove("shake");
   void el.momAvatar.offsetWidth; // reflow để chạy lại animation
@@ -659,7 +685,7 @@ function buildContextualScold(transaction, vars) {
   // 3. Đôi khi thêm câu so sánh giá cho đau
   const quip = priceQuip(transaction.amount);
   if (quip && Math.random() < 0.55) line += " " + quip;
-  return line;
+  return applyVoice(line);
 }
 
 // Khịa khoản THIẾT YẾU khi số tiền vô lý so với danh mục
@@ -693,14 +719,14 @@ function bigEssentialRoast(transaction, vars) {
   if (conf && amt >= conf.min) {
     let line = pickMessage(conf.lines, vars);
     if (amt >= 100000000) line += " Mà {amount} thì... con in tiền hả con?!".replace("{amount}", vars.amount);
-    return line;
+    return applyVoice(line);
   }
   // Không thuộc danh mục trên nhưng số tiền quá lớn cho một khoản thiết yếu
   if (amt >= BIG_ESSENTIAL.bills_generic.min) {
     let line = pickMessage(BIG_ESSENTIAL.bills_generic.lines, vars);
     const quip = priceQuip(amt);
     if (quip && Math.random() < 0.6) line += " " + quip;
-    return line;
+    return applyVoice(line);
   }
   return null;
 }
@@ -766,12 +792,12 @@ function reactTo(transaction) {
   let text, tone, sound;
 
   if (transaction.type === "saving") {
-    text = state.lang === "en" ? pickMessage(m.praise, vars) : pickByAmount(SAVING_TIERS, transaction.amount, vars);
+    text = state.lang === "en" ? pickMessage(m.praise, vars) : applyVoice(pickByAmount(SAVING_TIERS, transaction.amount, vars));
     const big = transaction.amount >= 500000;
     tone = big ? "praise" : null;
     sound = big ? "praise" : null;
   } else if (transaction.type === "income") {
-    text = state.lang === "en" ? pickMessage(m.income, vars) : pickByAmount(INCOME_TIERS, transaction.amount, vars);
+    text = state.lang === "en" ? pickMessage(m.income, vars) : applyVoice(pickByAmount(INCOME_TIERS, transaction.amount, vars));
     const big = transaction.amount >= 500000;
     tone = big ? "praise" : null;
     sound = big ? "praise" : null;
@@ -804,7 +830,7 @@ function reactTo(transaction) {
     if (state.budget > 0) {
       const spent = getThisMonthExpense(); // đã gồm khoản vừa thêm
       if (spent > state.budget) {
-        text += " " + OVER_BUDGET_LINE();
+        text += " " + applyVoice(OVER_BUDGET_LINE());
         tone = "scold";
         sound = "over";
       }
@@ -813,7 +839,7 @@ function reactTo(transaction) {
     if (!transaction.essential) {
       const cl = comboLine(state.combo);
       if (cl) {
-        text += " " + cl;
+        text += " " + applyVoice(cl);
         tone = "scold";
         sound = "over";
       }
