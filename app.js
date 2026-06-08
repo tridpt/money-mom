@@ -22,6 +22,8 @@ let state = {
   lastSummaryMonth: "",              // tháng đã xem tổng kết (YYYY-M)
   anger: 35,                         // tâm trạng: 0 (vui) .. 100 (giận tím người)
   angerDay: "",                      // ngày cập nhật anger gần nhất (để giảm dần theo ngày)
+  xp: 0,                             // điểm kinh nghiệm "đệ tử tiết kiệm"
+  challenge: { weekKey: "", id: "", claimed: false }, // thử thách tuần
   mood: "mom", // mom | ex | boss | neighbor | dad
   combo: 0,        // số lần tiêu hoang liên tiếp
   maxCombo: 0,     // combo cao nhất từng đạt
@@ -259,6 +261,25 @@ const el = {
   moodMeterLabel: $("moodMeterLabel"),
   momCard: document.querySelector(".mom-card"),
   appRoot: document.querySelector(".app"),
+  // Mới: game hóa & tương tác
+  argueBtn: $("argueBtn"),
+  apologizeBtn: $("apologizeBtn"),
+  begBtn: $("begBtn"),
+  dailyBtn: $("dailyBtn"),
+  levelBadge: $("levelBadge"),
+  levelTitle: $("levelTitle"),
+  xpFill: $("xpFill"),
+  levelXp: $("levelXp"),
+  challengeLabel: $("challengeLabel"),
+  challengeDesc: $("challengeDesc"),
+  challengeStatus: $("challengeStatus"),
+  begModal: $("begModal"),
+  begClose: $("begClose"),
+  begItem: $("begItem"),
+  begAmount: $("begAmount"),
+  begAskBtn: $("begAskBtn"),
+  begResult: $("begResult"),
+  begLogBtn: $("begLogBtn"),
 };
 
 // Trạng thái bộ lọc & sửa
@@ -988,6 +1009,12 @@ function reactTo(transaction) {
   speak(text, tone);
   if (sound) playSound(sound);
 
+  // Hiện nút "Cãi lại" sau khi bị mắng
+  if (el.argueBtn) {
+    if (tone === "scold") { el.argueBtn.style.display = ""; banterRound = 0; }
+    else { el.argueBtn.style.display = "none"; }
+  }
+
   // Nếu bật AI: thử sinh câu mắng riêng (bất đồng bộ, thay thế khi có)
   if (state.ai.enabled && state.ai.key && transaction.type === "expense" && !transaction.essential) {
     generateAIScold(transaction, tone);
@@ -1047,6 +1074,14 @@ function addTransaction() {
   adjustAnger(angerDelta(t));
   reactTo(t);
   checkAchievements();
+
+  // XP & thử thách tuần
+  let xpGain = 2;
+  if (t.type === "saving") xpGain += Math.max(5, Math.min(60, Math.round(t.amount / 100000)));
+  else if (t.type === "income") xpGain += 3;
+  gainXp(xpGain);
+  checkChallengeComplete();
+  renderChallenge();
 
   // Đạt mục tiêu tiết kiệm -> ăn mừng
   if (t.type === "saving" && state.goal.target > 0) {
@@ -2508,6 +2543,7 @@ const I18N = {
     settingsTitle: "⚙️ Cài đặt", settingsOpen: "⚙️ Cài đặt & tùy chỉnh →",
     navCatBudget: "Hạn mức danh mục", navCurrency: "Đơn vị tiền tệ", navRecurring: "Chi tiêu định kỳ",
     navData: "Dữ liệu & sao lưu", navScold: "Câu mắng tự viết", navChar: "Tạo nhân vật riêng", navAI: "Chế độ AI",
+    argue: "😤 Cãi lại", apologize: "🙇 Xin lỗi mẹ", beg: "💸 Xin tiền mẹ", daily: "📜 Câu hôm nay",
   },
   en: {
     tagline: "Overspend and get scolded. Save and... still get a remark.",
@@ -2557,6 +2593,7 @@ const I18N = {
     settingsTitle: "⚙️ Settings", settingsOpen: "⚙️ Settings & customization →",
     navCatBudget: "Category budgets", navCurrency: "Currency", navRecurring: "Recurring",
     navData: "Data & backup", navScold: "Your scoldings", navChar: "Custom character", navAI: "AI mode",
+    argue: "😤 Argue back", apologize: "🙇 Apologize", beg: "💸 Beg mom", daily: "📜 Daily roast",
   },
 };
 function tr(k) { return (I18N[state.lang] && I18N[state.lang][k]) || I18N.vi[k] || k; }
@@ -2645,6 +2682,10 @@ function applyLang() {
   setPh("aiKey", "aiKeyPh");
   setText("#aiSaveBtn", "aiSaveBtn");
   setText("#settingsBtn", "settingsOpen");
+  setText("#apologizeBtn", "apologize");
+  setText("#begBtn", "beg");
+  setText("#dailyBtn", "daily");
+  if (el.argueBtn && el.argueBtn.style.display !== "none") setText("#argueBtn", "argue");
   const aiToggle = document.querySelector(".ai-toggle");
   if (aiToggle) aiToggle.lastChild.textContent = " " + tr("aiEnable");
 
@@ -2699,8 +2740,248 @@ function toggleLang() {
   el.filterCategory.value = filters.category;
   el.filterType.value = filters.type;
   renderMoodMeter();
+  renderLevel();
+  renderChallenge();
   lastReaction = { text: getMood(state.mood).idle, tone: null, mood: state.mood };
   el.momMessage.textContent = lastReaction.text;
+}
+
+// ---- Game hóa: cấp độ "đệ tử tiết kiệm" ----
+const LEVELS = [
+  { min: 0, title: "Tập sự giữ ví" },
+  { min: 80, title: "Học việc tiết kiệm" },
+  { min: 200, title: "Thợ giữ tiền" },
+  { min: 450, title: "Cao thủ giữ ví" },
+  { min: 800, title: "Bậc thầy tiết kiệm" },
+  { min: 1400, title: "Đại sư keo kiệt" },
+  { min: 2200, title: "Thần giữ của" },
+];
+const LEVELS_EN = ["Rookie Saver", "Saving Apprentice", "Coin Keeper", "Wallet Master", "Saving Sage", "Frugal Grandmaster", "God of Thrift"];
+
+function levelInfo() {
+  const xp = state.xp || 0;
+  let idx = 0;
+  for (let i = 0; i < LEVELS.length; i++) if (xp >= LEVELS[i].min) idx = i;
+  const next = LEVELS[idx + 1];
+  return {
+    idx,
+    title: state.lang === "en" ? LEVELS_EN[idx] : LEVELS[idx].title,
+    prevMin: LEVELS[idx].min,
+    nextMin: next ? next.min : LEVELS[idx].min,
+    xp,
+    hasNext: !!next,
+  };
+}
+
+function renderLevel() {
+  const i = levelInfo();
+  el.levelBadge.textContent = "Lv" + (i.idx + 1);
+  el.levelTitle.textContent = i.title;
+  let pct, txt;
+  if (i.hasNext) {
+    pct = ((i.xp - i.prevMin) / (i.nextMin - i.prevMin)) * 100;
+    txt = `${i.xp} / ${i.nextMin} XP`;
+  } else { pct = 100; txt = `${i.xp} XP (MAX)`; }
+  el.xpFill.style.width = Math.min(Math.max(pct, 0), 100) + "%";
+  el.levelXp.textContent = txt;
+}
+
+function gainXp(n) {
+  if (!n || n <= 0) return;
+  const before = levelInfo().idx;
+  state.xp = (state.xp || 0) + n;
+  save();
+  const after = levelInfo().idx;
+  renderLevel();
+  if (after > before) {
+    setTimeout(() => {
+      showToast(`🎉 ${state.lang === "en" ? "Level up! You're now" : "Lên cấp! Giờ bạn là"} "${levelInfo().title}"`, "praise");
+      playSound("praise");
+      fireConfetti();
+    }, 1500);
+  }
+}
+
+// ---- Thử thách tuần ----
+const CHALLENGES = [
+  { id: "save500", reward: 50, vi: "Bỏ heo tổng ≥ 500.000 tuần này", en: "Save ≥ 500,000 total this week",
+    eval: (w) => { const s = w.filter((t) => t.type === "saving").reduce((a, t) => a + t.amount, 0); return { done: s >= 500000, text: `${formatVND(s)} / ${formatVND(500000)}` }; } },
+  { id: "save3x", reward: 40, vi: "Bỏ ống ít nhất 3 lần tuần này", en: "Save into the piggy bank ≥ 3 times this week",
+    eval: (w) => { const c = w.filter((t) => t.type === "saving").length; return { done: c >= 3, text: `${c}/3 lần` }; } },
+  { id: "log4d", reward: 30, vi: "Ghi chép ít nhất 4 ngày khác nhau", en: "Log on at least 4 different days",
+    eval: (w) => { const d = new Set(w.map((t) => new Date(t.ts).toDateString())); return { done: d.size >= 4, text: `${d.size}/4 ngày` }; } },
+  { id: "streak3", reward: 40, vi: "Giữ 3 ngày liên tiếp không tiêu hoang", en: "Keep a 3-day no-splurge streak",
+    eval: () => { const s = computeStreak(); return { done: s >= 3, text: `${s}/3 ngày` }; } },
+  { id: "income", reward: 25, vi: "Ghi nhận thu nhập tuần này", en: "Record some income this week",
+    eval: (w) => { const c = w.filter((t) => t.type === "income").length; return { done: c >= 1, text: `${c}/1` }; } },
+];
+
+function weekStartMs() {
+  const x = new Date();
+  const day = (x.getDay() + 6) % 7; // 0 = thứ Hai
+  x.setHours(0, 0, 0, 0);
+  x.setDate(x.getDate() - day);
+  return x.getTime();
+}
+function weekKeyNow() { return new Date(weekStartMs()).toISOString().slice(0, 10); }
+function weekTx() { const s = weekStartMs(); return state.transactions.filter((t) => t.ts >= s); }
+function pickChallengeId(key) {
+  let h = 0;
+  for (const ch of key) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return CHALLENGES[h % CHALLENGES.length].id;
+}
+function ensureChallenge() {
+  const wk = weekKeyNow();
+  if (!state.challenge || state.challenge.weekKey !== wk) {
+    state.challenge = { weekKey: wk, id: pickChallengeId(wk), claimed: false };
+    save();
+  }
+}
+function currentChallenge() { return CHALLENGES.find((c) => c.id === state.challenge.id) || CHALLENGES[0]; }
+
+function renderChallenge() {
+  ensureChallenge();
+  const c = currentChallenge();
+  const r = c.eval(weekTx());
+  el.challengeLabel.textContent = state.lang === "en" ? "Weekly challenge" : "Thử thách tuần";
+  el.challengeDesc.textContent = state.lang === "en" ? c.en : c.vi;
+  if (state.challenge.claimed) {
+    el.challengeStatus.textContent = `✅ ${state.lang === "en" ? "Done! +" : "Hoàn thành! +"}${c.reward} XP`;
+  } else if (r.done) {
+    el.challengeStatus.textContent = state.lang === "en" ? "🎁 Achieved! Log one more entry to claim" : "🎁 Đạt rồi! Ghi thêm 1 khoản để nhận thưởng";
+  } else {
+    el.challengeStatus.textContent = (state.lang === "en" ? "Progress: " : "Tiến độ: ") + r.text;
+  }
+}
+function checkChallengeComplete() {
+  ensureChallenge();
+  if (state.challenge.claimed) return;
+  const c = currentChallenge();
+  if (c.eval(weekTx()).done) {
+    state.challenge.claimed = true;
+    save();
+    gainXp(c.reward);
+    setTimeout(() => {
+      showToast(`🎯 ${state.lang === "en" ? "Weekly challenge complete! +" : "Hoàn thành thử thách tuần! +"}${c.reward} XP`, "praise");
+      playSound("praise");
+      fireConfetti();
+    }, 700);
+    renderChallenge();
+  }
+}
+
+// ---- Cãi lại / Xin lỗi ----
+const BANTER = [
+  ["Cãi à? Nuôi con lớn để con cãi lại mẹ đấy hả?", "Giỏi cãi nhỉ? Tiếc là cãi không ra tiền con ạ."],
+  ["Còn cãi nữa? Lý sự thì nhiều mà ví thì rỗng.", "Mẹ nói một con cãi mười, sao hồi đi học không giỏi vậy?"],
+  ["Thôi mẹ thua cái mồm con. Nhưng cuối tháng con vẫn thua cái ví nha.", "Được, con thắng. Phần thưởng là tự trả nợ một mình."],
+];
+let banterRound = 0;
+function argue() {
+  const r = Math.min(banterRound, BANTER.length - 1);
+  const line = BANTER[r][Math.floor(Math.random() * BANTER[r].length)];
+  banterRound++;
+  adjustAnger(6);
+  speak(line, "scold");
+  if (banterRound >= BANTER.length) { el.argueBtn.style.display = "none"; banterRound = 0; }
+}
+
+const APOLOGY = [
+  "Biết lỗi là tốt. Combo xóa, mẹ tha. Lần sau liệu hồn nha con.",
+  "Ừ, xin lỗi thì mẹ bỏ qua. Nhưng tiền tiêu rồi có xin lại được đâu.",
+  "Thôi được, mẹ nguôi rồi. Ngoan thì mẹ thương.",
+];
+function apologize() {
+  state.combo = 0;
+  adjustAnger(-25);
+  renderStreakCombo();
+  el.argueBtn.style.display = "none";
+  banterRound = 0;
+  speak(APOLOGY[Math.floor(Math.random() * APOLOGY.length)], "praise");
+}
+
+// ---- Mini-game: xin tiền mẹ ----
+const BEG_OK = [
+  "Thôi được, lần này mẹ cho. Nhưng đây là lần CUỐI đấy nha!",
+  "Ừ thì... con nói cũng có lý. Cầm tiền đi, đừng phá.",
+  "Mẹ mềm lòng rồi đó. Mua {note} đi rồi liệu mà tiết kiệm bù.",
+];
+const BEG_NO = [
+  "Mơ đi con. Tiền đâu mẹ cho con mua {note}?",
+  "Không. {amount} cho {note}? Mẹ thà cho con một cái lắc đầu.",
+  "Xin xỏ giỏi ghê. Nhưng câu trả lời là KHÔNG.",
+  "Con tự đi mà kiếm. Mẹ đâu phải cây ATM của con.",
+];
+let begPending = null;
+function openBeg() {
+  el.begResult.textContent = "";
+  el.begResult.className = "beg-result";
+  el.begLogBtn.style.display = "none";
+  begPending = null;
+  el.begModal.classList.add("show");
+}
+function doBeg() {
+  const item = el.begItem.value.trim() || "món đó";
+  const amount = parseAmount(el.begAmount.value);
+  const vars = { amount: formatVND(amount || 0), note: item };
+  let chance = 0.5;
+  if (amount >= 10000000) chance -= 0.28;
+  else if (amount >= 2000000) chance -= 0.12;
+  chance -= state.anger / 300;
+  const ok = Math.random() < Math.max(0.08, chance);
+  if (ok) {
+    el.begResult.className = "beg-result ok";
+    el.begResult.textContent = applyVoice(pickMessage(BEG_OK, vars));
+    adjustAnger(-3);
+    if (amount > 0) { el.begLogBtn.style.display = ""; begPending = { item, amount }; }
+  } else {
+    el.begResult.className = "beg-result no";
+    el.begResult.textContent = applyVoice(pickMessage(BEG_NO, vars));
+    el.begLogBtn.style.display = "none";
+    adjustAnger(4);
+  }
+}
+function logBegItem() {
+  if (!begPending) return;
+  el.begModal.classList.remove("show");
+  setType("expense");
+  setEssential(false);
+  el.amountInput.value = new Intl.NumberFormat("vi-VN").format(begPending.amount);
+  el.noteInput.value = begPending.item;
+  begPending = null;
+  addTransaction();
+}
+
+// ---- Ngày lễ ----
+const HOLIDAYS = {
+  "01-01": "Chúc mừng năm mới! Năm nay nhớ tiết kiệm nha con, đừng để mẹ phải la nhiều.",
+  "02-14": "Valentine à? Người yêu thì chưa chắc có mà tiền thì sắp hết rồi con ơi.",
+  "03-08": "8/3 vui vẻ con gái! Hôm nay mẹ tha, nhưng mai tính tiếp nha.",
+  "10-20": "20/10 nha! Hôm nay con tiêu mẹ cũng không nỡ la... nhiều.",
+  "12-24": "Giáng sinh an lành! Quà cáp vừa phải thôi con nhé.",
+  "12-25": "Merry Christmas! Ông già Noel không trả nợ giùm con đâu đấy.",
+};
+const HOLIDAYS_EN = {
+  "01-01": "Happy New Year! Save more this year, don't make me nag so much.",
+  "02-14": "Valentine's? You might not have a date, but your wallet sure is empty.",
+  "12-25": "Merry Christmas! Santa won't pay off your debt, you know.",
+};
+function holidayGreeting() {
+  const d = new Date();
+  const k = String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  if (state.lang === "en") return HOLIDAYS_EN[k] || null;
+  return HOLIDAYS[k] || null;
+}
+
+// ---- Câu mắng của ngày (cố định theo ngày) ----
+function showDailyRoast() {
+  const d = new Date();
+  const seed = d.getFullYear() * 1000 + d.getMonth() * 31 + d.getDate();
+  const pool = getMood(state.mood).scold;
+  const raw = pool[seed % pool.length];
+  const text = raw.replace(/\{amount\}/g, "kha khá").replace(/\{note\}/g, "thứ đó");
+  lastReaction = { text: applyVoice(text), tone: "scold", mood: state.mood };
+  speak(lastReaction.text, "scold");
 }
 
 // ---- Events ----
@@ -2887,6 +3168,17 @@ function bindEvents() {
     const btn = e.target.closest(".snav-item");
     if (btn) switchPanel(btn.dataset.panel);
   });
+
+  // Game hóa & tương tác
+  el.argueBtn.addEventListener("click", argue);
+  el.apologizeBtn.addEventListener("click", apologize);
+  el.dailyBtn.addEventListener("click", showDailyRoast);
+  el.begBtn.addEventListener("click", openBeg);
+  el.begClose.addEventListener("click", () => el.begModal.classList.remove("show"));
+  el.begModal.addEventListener("click", (e) => { if (e.target === el.begModal) el.begModal.classList.remove("show"); });
+  el.begAskBtn.addEventListener("click", doBeg);
+  el.begLogBtn.addEventListener("click", logBegItem);
+  el.begAmount.addEventListener("input", (e) => { e.target.value = formatNumberInput(e.target.value); });
 }
 
 // ---- Init ----
@@ -2909,6 +3201,8 @@ function init() {
   renderRecurring();
   populateFilterCategories();
   renderMoodMeter();
+  renderLevel();
+  renderChallenge();
   setType(state.ui.type);
   setEssential(state.ui.essential);
   // Khôi phục trạng thái âm thanh
@@ -2934,9 +3228,11 @@ function init() {
   renderScoldList();
   renderCharList();
   applyLang();
-  // Lời chào mở màn
-  lastReaction = { text: getMood(state.mood).idle, tone: null, mood: state.mood };
-  el.momMessage.textContent = getMood(state.mood).idle;
+  // Lời chào mở màn (ưu tiên lời chào ngày lễ)
+  const holiday = holidayGreeting();
+  const greet = holiday || getMood(state.mood).idle;
+  lastReaction = { text: greet, tone: null, mood: state.mood };
+  el.momMessage.textContent = applyVoice(greet);
   // Nhắc chi tiêu định kỳ tới hạn
   remindRecurringDue();
   // Nhắc khai báo hằng ngày

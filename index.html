@@ -52,7 +52,29 @@
             <span class="mood-meter-label" id="moodMeterLabel">Bình thường</span>
           </div>
         </div>
+        <div class="mom-actions">
+          <button id="argueBtn" class="mom-act" style="display:none;">😤 Cãi lại</button>
+          <button id="apologizeBtn" class="mom-act">🙇 Xin lỗi mẹ</button>
+          <button id="begBtn" class="mom-act">💸 Xin tiền mẹ</button>
+          <button id="dailyBtn" class="mom-act">📜 Câu hôm nay</button>
+        </div>
         <button id="shareBtn" class="share-trigger" title="Khoe lời mẹ phán">📸 Khoe lời mẹ phán</button>
+
+        <div class="game-card">
+          <div class="level-row">
+            <div class="level-badge" id="levelBadge">Lv1</div>
+            <div class="level-info">
+              <div class="level-title" id="levelTitle">Tập sự giữ ví</div>
+              <div class="mood-bar"><div class="mood-bar-fill xp-fill" id="xpFill"></div></div>
+              <div class="level-xp" id="levelXp">0 / 80 XP</div>
+            </div>
+          </div>
+          <div class="challenge">
+            <div class="challenge-head">🎯 <span id="challengeLabel">Thử thách tuần</span></div>
+            <div class="challenge-desc" id="challengeDesc">—</div>
+            <div class="challenge-status" id="challengeStatus"></div>
+          </div>
+        </div>
 
         <div class="stats">
           <div class="stat-card balance">
@@ -430,6 +452,26 @@
           <p class="ai-status" id="aiStatus"></p>
         </div>
       </section>
+    </div>
+  </div>
+
+  <!-- Beg money mini-game -->
+  <div class="modal-overlay" id="begModal">
+    <div class="modal">
+      <button class="modal-close" id="begClose" title="Đóng">✕</button>
+      <h3>💸 Xin tiền mẹ</h3>
+      <p class="settings-note">Muốn mua món xa xỉ? Trình bày ra xem mẹ có duyệt không nhé. Mẹ đang giận thì khó xin lắm đấy.</p>
+      <div class="field">
+        <label for="begItem">Muốn mua gì?</label>
+        <input type="text" id="begItem" placeholder="VD: iPhone mới" autocomplete="off" />
+      </div>
+      <div class="field">
+        <label for="begAmount">Hết bao nhiêu?</label>
+        <input type="text" id="begAmount" inputmode="numeric" placeholder="VD: 25.000.000" autocomplete="off" />
+      </div>
+      <button id="begAskBtn" class="add-btn">🙏 Thuyết phục mẹ</button>
+      <div class="beg-result" id="begResult"></div>
+      <button id="begLogBtn" class="data-btn" style="display:none;">✍️ Ghi khoản này vào sổ</button>
     </div>
   </div>
 
