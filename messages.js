@@ -387,3 +387,118 @@ const CATEGORY_LABELS_EN = {
   food: "Food", shopping: "Shopping", transport: "Transport", bills: "Bills",
   fun: "Fun", health: "Health", edu: "Education", other: "Other",
 };
+
+
+// =====================================================================
+// BỔ SUNG: thêm nhiều câu thoại "khịa mạnh" cho các nhân vật (tiếng Việt)
+// =====================================================================
+MESSAGES.mom.scold.push(
+  "Tiền mẹ cho để con khôn ra, ai ngờ con đem khôn... cho hàng quán.",
+  "{amount}? Con quẹt thẻ mà mẹ nghe tim mẹ quẹt theo từng nhịp.",
+  "Người ta đầu tư đất, con đầu tư mỡ bụng với trà sữa.",
+  "Con mà chăm kiếm tiền bằng một nửa lúc tiêu thì giàu lâu rồi.",
+  "Mua {note} làm gì, định để dành khoe với chủ nợ à con?",
+  "Ví con như cái lưới: tiền vào bao nhiêu cũng lọt sạch.",
+  "Mẹ đẻ con ra chứ có đẻ ra tiền đâu mà con tiêu kiểu đốt vàng mã.",
+  "Cái máy ATM còn biết tiếc tiền hơn con đấy.",
+  "Con tiêu một phát {amount}, mẹ già thêm một tuổi.",
+  "Thôi cứ tiêu đi, để mẹ còn có chuyện kể ở đám giỗ.",
+  "Đời mẹ chưa thấy ai nghèo mà sang như con.",
+  "Con tính cưới cái thẻ tín dụng luôn cho rồi, gắn bó dữ vậy.",
+  "{note} hả? Tiền thì hết mà nhu cầu thì vô hạn ghê con.",
+  "Mẹ lạy con, để dành tiền chứ đừng để dành nợ.",
+  "Con tiêu như thể ngày mai trúng số, mà số con thì... thôi mẹ không nói."
+);
+MESSAGES.mom.praise.push(
+  "Trời quang mây tạnh, con của mẹ biết tiết kiệm. Có điềm gì không ta?",
+  "Bỏ heo {amount}? Để mẹ ghi vào lịch sử dòng họ.",
+  "Mẹ phải dụi mắt mấy lần mới tin con không tiêu hoang đấy.",
+  "Ừ giỏi. Nhưng đừng vui quá rồi mai lại trà sữa nha con."
+);
+
+MESSAGES.ex.scold.push(
+  "Tiêu {amount} cho {note}? Hèn gì hồi đó hẹn hò toàn anh trả.",
+  "Em ổn, em chỉ tiếc số tiền lẽ ra anh để mua nhẫn.",
+  "Anh vẫn tiêu hoang y như ngày xưa. Có mỗi cái đó là chung thủy.",
+  "Người yêu mới của em ghi sổ chi tiêu. Còn anh ghi nợ.",
+  "{amount}? Đủ để em đi spa quên anh một buổi đấy.",
+  "Anh đầu tư vào cảm xúc nhất thời giỏi ghê, tiếc là không có lãi.",
+  "Chia tay anh là khoản đầu tư lời nhất đời em.",
+  "Tiêu đi anh, dù sao giờ cũng chẳng còn ai khuyên anh nữa.",
+  "Anh mà giữ tiền giỏi như giữ ảnh cũ của em thì đã khá.",
+  "Mua {note} cho ai thế? Chắc không phải cho tương lai rồi."
+);
+MESSAGES.ex.praise.push(
+  "Ô, biết để dành. Trưởng thành muộn còn hơn không anh nhỉ.",
+  "Tiết kiệm {amount}? Giá mà hồi yêu em anh chịu khó vậy.",
+  "Giỏi đấy. Nhưng em vẫn đi rồi, khen cho vui thôi."
+);
+
+MESSAGES.boss.scold.push(
+  "Em tiêu nhanh hơn cả tốc độ em làm việc đấy.",
+  "{amount} cho {note}? Anh duyệt ngân sách dự án còn đắn đo hơn em.",
+  "Em mà quản tài chính công ty thế này thì anh phá sản quý sau.",
+  "Lương em chưa về đã có chủ cả rồi à?",
+  "Anh trả lương theo giờ, không phải để em đốt theo phút.",
+  "Em giỏi tiêu, dở giữ. Đúng kiểu nhân viên thời vụ.",
+  "Tiền thưởng Tết của em, anh thấy đi trước cả deadline.",
+  "Đầu tư bản thân đi em, đừng đầu tư cho quán cà phê đầu ngõ."
+);
+MESSAGES.boss.praise.push(
+  "Cuối cùng cũng biết tối ưu chi phí. Có tố chất quản lý đấy.",
+  "Để dành {amount}? Anh cân nhắc cho em làm trưởng nhóm... tiết kiệm."
+);
+
+MESSAGES.neighbor.scold.push(
+  "Ối dào, mua {note} cơ à? Để bác buôn với bà Tám phát nữa.",
+  "Con bác nó để dành cưới vợ, cháu để dành... ship đồ.",
+  "{amount} một lần? Bác đi chợ cả tuần chưa hết từng đó.",
+  "Cháu cứ tiêu đi, mai cả ngõ biết hết cho coi.",
+  "Bác sống tới giờ chưa thấy ai 'cháy túi có gu' như cháu.",
+  "Cháu mà tiết kiệm bằng một góc lúc khoe đồ thì bác mừng.",
+  "Đồ đẹp thật, mà tiền đâu ra hả cháu? Bác hỏi giùm cả xóm.",
+  "Cứ thế này thì Tết về quê lấy gì khoe hả cháu?"
+);
+MESSAGES.neighbor.praise.push(
+  "Ôi cháu biết để dành! Để bác loa làng cho cả xóm tự hào.",
+  "Bỏ ống {amount}? Ngoan hơn con nhà bác rồi đấy."
+);
+
+MESSAGES.dad.scold.push(
+  "Tiêu {amount}. Bố không giận. Bố chỉ lặng lẽ thất vọng.",
+  "Bố nói một lần: tiền không biết mọc lại như tóc đâu.",
+  "Con mua {note}. Bố ghi vào lòng. Cuối năm bố nhắc.",
+  "Bố từng trẻ, từng dại. Đừng dại y hệt bố.",
+  "Im. Cái hóa đơn này nói thay con rồi.",
+  "Bố không cấm. Bố chỉ ngừng chuyển khoản.",
+  "Con lớn rồi. Tự lo. Bố xem con xoay sở.",
+  "Bố tiết kiệm cả đời để con tiêu một buổi. Hay."
+);
+MESSAGES.dad.praise.push(
+  "Con để dành. Bố gật. Một cái thôi, nhưng là gật.",
+  "Bỏ quỹ {amount}. Bố không khen nhiều. Nhưng tối nay bố ngủ ngon."
+);
+
+// Thêm câu combo & vượt hạn mức khốc liệt hơn
+COMBO_LINES[4] = "🔥 Combo x4! Tay quẹt thẻ của con lên đồng rồi đấy à?";
+COMBO_LINES[6] = "🔥🔥 Combo x6! Mẹ gọi cấp cứu cho cái ví được chưa?";
+OVER_BUDGET_LINES.push(
+  "Ngân sách vỡ trận. Giờ con ăn bằng niềm tin nha!",
+  "Hạn mức là cái mẹ đặt ra, không phải gợi ý để con vượt qua đâu con!",
+  "Vượt mức rồi! Tháng này coi như mẹ nuôi con thêm lần nữa."
+);
+
+// Bổ sung tiếng Anh cho một vài nhân vật chính
+MESSAGES_EN.mom.scold.push(
+  "I gave you money to get smarter, you handed it to the bubble-tea shop.",
+  "{amount}? Every swipe of your card swipes a year off my life.",
+  "Your wallet is a sieve — money pours in, leaks right out.",
+  "The ATM has more self-control than you do.",
+  "Keep going. At least I'll have stories for the family reunion."
+);
+MESSAGES_EN.ex.scold.push(
+  "Spent {amount} on {note}? No wonder I always paid on our dates.",
+  "Breaking up with you was the best investment I ever made.",
+  "My new partner keeps a budget. You kept... a tab.",
+  "You're still as reckless as before. At least that's consistent."
+);
