@@ -1,5 +1,7 @@
 # Money Mom 👩‍🦰💸
 
+**🌐 Ngôn ngữ:** Tiếng Việt · [English](README.en.md)
+
 > Ứng dụng quản lý tài chính kiểu **"bị mắng mới chịu tiết kiệm"**.
 
 [![Live Demo](https://img.shields.io/badge/demo-live-ff5d8f?style=flat-square)](https://tridpt.github.io/money-mom/)
