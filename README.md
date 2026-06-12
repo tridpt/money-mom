@@ -2,6 +2,13 @@
 
 > Ứng dụng quản lý tài chính kiểu **"bị mắng mới chịu tiết kiệm"**.
 
+[![Live Demo](https://img.shields.io/badge/demo-live-ff5d8f?style=flat-square)](https://tridpt.github.io/money-mom/)
+[![Deploy](https://img.shields.io/badge/GitHub%20Pages-deployed-2bbf86?style=flat-square&logo=github)](https://tridpt.github.io/money-mom/)
+[![PWA](https://img.shields.io/badge/PWA-ready-7c5cff?style=flat-square)](https://tridpt.github.io/money-mom/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
+![Vanilla JS](https://img.shields.io/badge/vanilla-JS-f7df1e?style=flat-square&logo=javascript&logoColor=black)
+![No dependencies](https://img.shields.io/badge/dependencies-0-success?style=flat-square)
+
 **🔗 Dùng thử ngay (không cần cài đặt): [tridpt.github.io/money-mom](https://tridpt.github.io/money-mom/)**
 
 Thay vì những biểu đồ thu chi khô khan, Money Mom quản lý ví tiền của bạn bằng cách... **mắng mỏ và khích bác**. Nhập một khoản tiêu không thiết yếu là bị phán ngay: *"Lương ba cọc ba đồng mà tiêu như chủ tịch tập đoàn vậy con?"*. Bỏ ống heo thì được khen mỉa: *"Ồ, hôm nay cũng biết nghĩ cho tương lai rồi cơ à?"*.
