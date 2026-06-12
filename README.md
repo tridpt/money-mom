@@ -13,6 +13,8 @@
 
 **🔗 Dùng thử ngay (không cần cài đặt): [tridpt.github.io/money-mom](https://tridpt.github.io/money-mom/)**
 
+![Demo Money Mom](screenshots/demo.gif)
+
 Thay vì những biểu đồ thu chi khô khan, Money Mom quản lý ví tiền của bạn bằng cách... **mắng mỏ và khích bác**. Nhập một khoản tiêu không thiết yếu là bị phán ngay: *"Lương ba cọc ba đồng mà tiêu như chủ tịch tập đoàn vậy con?"*. Bỏ ống heo thì được khen mỉa: *"Ồ, hôm nay cũng biết nghĩ cho tương lai rồi cơ à?"*.
 
 > Song ngữ 🇻🇳 / 🇬🇧 · Chạy offline (PWA) · Dữ liệu lưu hoàn toàn trên máy bạn.

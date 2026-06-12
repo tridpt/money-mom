@@ -13,6 +13,8 @@
 
 **🔗 Try it now (no install needed): [tridpt.github.io/money-mom](https://tridpt.github.io/money-mom/)**
 
+![Money Mom demo](screenshots/demo.gif)
+
 Instead of dull income/expense charts, Money Mom manages your wallet by... **nagging and roasting you**. Log a non-essential expense and it fires back instantly: *"You earn peanuts but spend like a CEO, huh?"*. Drop something in the piggy bank and it praises you sarcastically: *"Oh, thinking about your future now, are we?"*.
 
 > Bilingual 🇻🇳 / 🇬🇧 · Works offline (PWA) · All data stays entirely on your device.
