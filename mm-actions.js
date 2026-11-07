@@ -14,6 +14,8 @@ function addTransaction() {
     id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
     type: state.ui.type,
     amount,
+    _rawAmount: amount,
+    ...(state.currency === "VND" ? { _baseVnd: amount } : {}),
     note,
     essential: state.ui.type === "expense" ? state.ui.essential : false,
     category: state.ui.type === "expense" ? state.ui.category : null,
@@ -44,7 +46,7 @@ function addTransaction() {
 
   // XP & thử thách tuần
   let xpGain = 2;
-  if (t.type === "saving") xpGain += Math.max(5, Math.min(60, Math.round(t.amount / 100000)));
+  if (t.type === "saving") xpGain += Math.max(5, Math.min(60, Math.round(t.amount / Math.max(0.01, vndThreshold(100000)))));
   else if (t.type === "income") xpGain += 3;
   gainXp(xpGain);
   checkChallengeComplete();
@@ -71,13 +73,7 @@ function addTransaction() {
 function deleteTransaction(id) {
   state.transactions = state.transactions.filter((t) => t.id !== id);
   save();
-  renderStats();
-  renderHistory();
-  renderBudget();
-  renderAnalytics();
-  renderStreakCombo();
-  renderGoal();
-  renderCatBudgets();
+  reRenderAll();
 }
 
 function clearAll() {
@@ -298,6 +294,9 @@ async function copyCaption() {
 function saveSalary() {
   const val = parseAmount(el.salaryInput.value);
   state.salary = val;
+  state._rawSalary = val;
+  if (state.currency === "VND") state._baseSalaryVnd = val;
+  else delete state._baseSalaryVnd;
   save();
   renderSalary();
   renderStats();
@@ -309,8 +308,12 @@ function saveSalary() {
 function saveBudget() {
   const val = parseAmount(el.budgetInput.value);
   state.budget = val;
+  state._rawBudget = val;
+  if (state.currency === "VND") state._baseBudgetVnd = val;
+  else delete state._baseBudgetVnd;
   save();
   renderBudget();
+  renderPrediction();
   if (val > 0) {
     el.budgetInput.value = new Intl.NumberFormat("vi-VN").format(val);
     speak(`Hạn mức ${formatVND(val)} tháng này. Vượt một đồng là mẹ biết liền đó!`, null);

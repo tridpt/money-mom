@@ -15,6 +15,7 @@ let state = {
   theme: "dark",        // dark | light
   onboardingDone: false,
   currency: "VND",
+  vndRate: 1,
   customScolds: [],      // câu mắng do người dùng tự viết
   customChars: [],       // nhân vật tự tạo [{id,label,avatar,scold:[],praise:[]}]
   goal: { name: "", target: 0 },     // mục tiêu tiết kiệm
@@ -99,7 +100,14 @@ const VOICE = {
 };
 function replaceWord(text, word, repl) {
   const re = new RegExp("(^|[^\\p{L}])(" + word + ")(?![\\p{L}])", "giu");
-  return text.replace(re, (full, pre, w) => {
+  return text.replace(re, (full, pre, w, offset, str) => {
+    if (word.toLowerCase() === "con") {
+      const wStart = offset + pre.length;
+      const before = str.slice(0, wStart);
+      const after = str.slice(wStart + w.length);
+      if (/(?:^|[^\p{L}])(?:đứa|mấy|những|các)\s+$/iu.test(before)) return full;
+      if (/^\s+(?:số|gái|trai|nhà|heo|mèo|chó|cá|người|đường)(?![\p{L}])/iu.test(after)) return full;
+    }
     const cap = w[0] === w[0].toUpperCase();
     const r = cap ? repl.charAt(0).toUpperCase() + repl.slice(1) : repl;
     return pre + r;
@@ -301,11 +309,44 @@ const CURRENCIES = {
   GBP: { symbol: "£", locale: "en-GB", prefix: true },
 };
 
+const DEFAULT_VND_RATES = {
+  VND: 1,
+  USD: 0.00004,
+  EUR: 0.000037,
+  JPY: 0.006,
+  KRW: 0.055,
+  GBP: 0.000031,
+};
+
+function vndThreshold(vndAmount) {
+  const scale =
+    state.currency === "VND"
+      ? 1
+      : state.vndRate && state.vndRate !== 1
+        ? state.vndRate
+        : DEFAULT_VND_RATES[state.currency] || 1;
+  return vndAmount * scale;
+}
+
+function isDecimalCurrency(cur = state.currency) {
+  return cur === "USD" || cur === "EUR" || cur === "GBP";
+}
+
+function roundCurrencyAmount(n, cur = state.currency) {
+  if (!Number.isFinite(n)) return 0;
+  return isDecimalCurrency(cur) ? Math.round(n * 100) / 100 : Math.round(n);
+}
+
 function curCfg() { return CURRENCIES[state.currency] || CURRENCIES.VND; }
 
 function formatVND(n) {
   const c = curCfg();
-  const num = new Intl.NumberFormat(c.locale).format(Math.round(n));
+  const val = roundCurrencyAmount(n, state.currency);
+  const opts =
+    isDecimalCurrency(state.currency) && val % 1 !== 0
+      ? { minimumFractionDigits: 2, maximumFractionDigits: 2 }
+      : { maximumFractionDigits: 2 };
+  const num = new Intl.NumberFormat(c.locale, opts).format(val);
   return c.prefix ? c.symbol + num : num + c.symbol;
 }
 
@@ -321,8 +362,37 @@ function formatNumberInput(value) {
   return num ? new Intl.NumberFormat("vi-VN").format(num) : "";
 }
 
+function formatInputWithCaret(input) {
+  if (!input) return;
+  const raw = input.value || "";
+  const selStart = typeof input.selectionStart === "number" ? input.selectionStart : raw.length;
+  const digitsBeforeCaret = (raw.slice(0, selStart).match(/\d/g) || []).length;
+  const formatted = formatNumberInput(raw);
+  input.value = formatted;
+  if (typeof input.setSelectionRange === "function" && document.activeElement === input) {
+    let pos = 0;
+    if (digitsBeforeCaret > 0) {
+      let seen = 0;
+      for (let i = 0; i < formatted.length; i++) {
+        if (/\d/.test(formatted[i])) seen++;
+        if (seen === digitsBeforeCaret) {
+          pos = i + 1;
+          break;
+        }
+      }
+    }
+    try {
+      input.setSelectionRange(pos, pos);
+    } catch (e) { /* ignore */ }
+  }
+}
+
 function save() {
-  localStorage.setItem(STORE_KEY, JSON.stringify(state));
+  try {
+    localStorage.setItem(STORE_KEY, JSON.stringify(state));
+  } catch (e) {
+    console.warn("Storage quota exceeded", e);
+  }
 }
 
 function load() {
@@ -497,24 +567,32 @@ function renderHistory() {
     const icon = cat ? cat.icon : TYPE_ICON[t.type];
     const metaLabel = cat ? catLabel(t.category) : TYPE_LABEL[t.type];
 
+    const safeType = escapeHtml(t.type);
+    const safeId = escapeHtml(t.id);
+    const safeCategory = escapeHtml(t.category || "");
+    const safeMetaLabel = escapeHtml(metaLabel);
+
     li.innerHTML = `
-      <span class="item-icon">${icon}</span>
-      <div class="item-body">
+      <span class="item-icon">${escapeHtml(icon)}</span>
+      <div class="item-body" data-category="${safeCategory}">
         <div class="item-note">${escapeHtml(t.note || metaLabel)}</div>
-        <div class="item-meta">${metaLabel}${tag} · ${dateStr}</div>
+        <div class="item-meta">${safeMetaLabel}${tag} · ${dateStr}</div>
       </div>
-      <span class="item-amount ${t.type}">${sign}${formatVND(t.amount)}</span>
-      <button class="item-edit" data-id="${t.id}" title="Sửa">✏️</button>
-      <button class="item-del" data-id="${t.id}" title="Xóa">✕</button>
+      <span class="item-amount ${safeType}">${sign}${formatVND(t.amount)}</span>
+      <button class="item-edit" data-id="${safeId}" title="Sửa">✏️</button>
+      <button class="item-del" data-id="${safeId}" title="Xóa">✕</button>
     `;
     el.historyList.appendChild(li);
   }
 }
 
 function escapeHtml(str) {
-  const div = document.createElement("div");
-  div.textContent = str;
-  return div.innerHTML;
+  return String(str ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 function renderMood() {

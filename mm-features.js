@@ -230,13 +230,39 @@ function getSplurgeDaySet() {
 
 function computeStreak() {
   if (state.transactions.length === 0) return 0;
-  const splurge = getSplurgeDaySet();
-  const firstTs = Math.min(...state.transactions.map((t) => t.ts));
-  const first = new Date(firstTs); first.setHours(0, 0, 0, 0);
+  const hasActivityByDay = new Set();
+  const overspentByDay = new Set();
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  const todayMs = now.getTime();
+  let firstTs = Infinity;
+
+  for (const t of state.transactions) {
+    if (!Number.isFinite(t.ts)) continue;
+    const td = new Date(t.ts);
+    td.setHours(0, 0, 0, 0);
+    const tMs = td.getTime();
+    if (tMs > todayMs) continue;
+    if (tMs < firstTs) firstTs = tMs;
+    const key = dayKey(td);
+    hasActivityByDay.add(key);
+    if (t.type === "expense" && !t.essential) {
+      overspentByDay.add(key);
+    }
+  }
+
+  if (!Number.isFinite(firstTs)) return 0;
+  const d = new Date(todayMs);
+  const todayKey = dayKey(d);
+  if (overspentByDay.has(todayKey)) return 0;
+  if (!hasActivityByDay.has(todayKey)) {
+    d.setDate(d.getDate() - 1);
+  }
+
   let streak = 0;
-  const d = new Date(); d.setHours(0, 0, 0, 0);
-  while (d.getTime() >= first.getTime()) {
-    if (splurge.has(dayKey(d))) break;
+  while (d.getTime() >= firstTs) {
+    const key = dayKey(d);
+    if (overspentByDay.has(key) || !hasActivityByDay.has(key)) break;
     streak++;
     d.setDate(d.getDate() - 1);
   }
@@ -258,12 +284,12 @@ function renderStreakCombo() {
 // ---- Huy hiệu & thành tích ----
 const ACHIEVEMENTS = [
   { id: "first_note",  icon: "📝", title: "Lần đầu ghi sổ",      desc: "Ghi khoản đầu tiên",                 check: (s) => s.txCount >= 1 },
-  { id: "piggy_saint", icon: "🐷", title: "Thánh bỏ ống",        desc: "Tổng tiết kiệm đạt 1 triệu",          check: (s) => s.totalSaving >= 1000000 },
+  { id: "piggy_saint", icon: "🐷", title: "Thánh bỏ ống",        desc: "Tổng tiết kiệm đạt 1 triệu",          check: (s) => s.totalSaving >= vndThreshold(1000000) },
   { id: "saver_5",     icon: "💰", title: "Chăm bỏ heo",         desc: "Bỏ ống đủ 5 lần",                     check: (s) => s.savingCount >= 5 },
   { id: "streak_3",    icon: "🔥", title: "3 ngày không trà sữa", desc: "3 ngày liên tiếp không tiêu hoang",   check: (s) => s.streak >= 3 },
   { id: "streak_7",    icon: "🧘", title: "Tuần lễ kỷ luật",      desc: "7 ngày liên tiếp không tiêu hoang",   check: (s) => s.streak >= 7 },
   { id: "rate_30",     icon: "🏦", title: "Tay hòm chìa khóa",    desc: "Tỷ lệ tiết kiệm ≥ 30% trong tháng",   check: (s) => s.savingRate >= 30 },
-  { id: "spender_god", icon: "💸", title: "Chúa chi tiêu",        desc: "Chi hơn 5 triệu trong một tháng",     check: (s) => s.expenseThis >= 5000000 },
+  { id: "spender_god", icon: "💸", title: "Chúa chi tiêu",        desc: "Chi hơn 5 triệu trong một tháng",     check: (s) => s.expenseThis >= vndThreshold(5000000) },
   { id: "combo_5",     icon: "🎆", title: "Đốt tiền nghệ thuật",  desc: "Đạt combo tiêu hoang x5",             check: (s) => s.maxCombo >= 5 },
   { id: "combo_10",    icon: "💀", title: "Vô phương cứu chữa",   desc: "Đạt combo tiêu hoang x10",            check: (s) => s.maxCombo >= 10 },
 ];
@@ -391,6 +417,9 @@ function getTotalSaving() {
 function saveGoal() {
   state.goal.name = el.goalName.value.trim();
   state.goal.target = parseAmount(el.goalTarget.value);
+  state.goal._rawAmount = state.goal.target;
+  if (state.currency === "VND") state.goal._baseVnd = state.goal.target;
+  else delete state.goal._baseVnd;
   save();
   renderGoal();
   if (state.goal.target > 0) {
@@ -451,17 +480,88 @@ function renderCatBudgets() {
 }
 
 // ---- Tiền tệ (quy đổi tỷ giá thật) ----
-function applyRateToAmounts(rate) {
-  state.transactions.forEach((t) => { t.amount = Math.round(t.amount * rate); });
-  state.salary = Math.round(state.salary * rate);
-  state.budget = Math.round(state.budget * rate);
-  if (state.goal) state.goal.target = Math.round((state.goal.target || 0) * rate);
-  for (const k in state.catBudgets) state.catBudgets[k] = Math.round(state.catBudgets[k] * rate);
-  (state.recurring || []).forEach((r) => { r.amount = Math.round(r.amount * rate); });
+function applyRateToAmounts(rate, targetCur = state.currency) {
+  const fromVnd = state.currency === "VND";
+  const toVnd = targetCur === "VND";
+  state.vndRate = toVnd ? 1 : (state.vndRate || (DEFAULT_VND_RATES[state.currency] || 1)) * rate;
+
+  state.transactions.forEach((t) => {
+    if (fromVnd && typeof t._baseVnd !== "number") t._baseVnd = t.amount;
+    const raw = (typeof t._rawAmount === "number" ? t._rawAmount : t.amount) * rate;
+    if (toVnd && typeof t._baseVnd === "number") {
+      t.amount = t._baseVnd;
+      t._rawAmount = t._baseVnd;
+    } else {
+      t._rawAmount = raw;
+      t.amount = roundCurrencyAmount(raw, targetCur);
+    }
+  });
+
+  if (fromVnd && typeof state._baseSalaryVnd !== "number") state._baseSalaryVnd = state.salary;
+  const rawSalary = (typeof state._rawSalary === "number" ? state._rawSalary : state.salary) * rate;
+  if (toVnd && typeof state._baseSalaryVnd === "number") {
+    state.salary = state._baseSalaryVnd;
+    state._rawSalary = state._baseSalaryVnd;
+  } else {
+    state._rawSalary = rawSalary;
+    state.salary = roundCurrencyAmount(rawSalary, targetCur);
+  }
+
+  if (fromVnd && typeof state._baseBudgetVnd !== "number") state._baseBudgetVnd = state.budget;
+  const rawBudget = (typeof state._rawBudget === "number" ? state._rawBudget : state.budget) * rate;
+  if (toVnd && typeof state._baseBudgetVnd === "number") {
+    state.budget = state._baseBudgetVnd;
+    state._rawBudget = state._baseBudgetVnd;
+  } else {
+    state._rawBudget = rawBudget;
+    state.budget = roundCurrencyAmount(rawBudget, targetCur);
+  }
+
+  if (state.goal) {
+    if (fromVnd && typeof state.goal._baseVnd !== "number") state.goal._baseVnd = state.goal.target || 0;
+    const rawGoal = (typeof state.goal._rawAmount === "number" ? state.goal._rawAmount : (state.goal.target || 0)) * rate;
+    if (toVnd && typeof state.goal._baseVnd === "number") {
+      state.goal.target = state.goal._baseVnd;
+      state.goal._rawAmount = state.goal._baseVnd;
+    } else {
+      state.goal._rawAmount = rawGoal;
+      state.goal.target = roundCurrencyAmount(rawGoal, targetCur);
+    }
+  }
+
+  state._rawCatBudgets = state._rawCatBudgets || {};
+  state._baseCatBudgetsVnd = state._baseCatBudgetsVnd || {};
+  for (const k in state.catBudgets) {
+    if (fromVnd && typeof state._baseCatBudgetsVnd[k] !== "number") {
+      state._baseCatBudgetsVnd[k] = state.catBudgets[k];
+    }
+    const rawCb = (typeof state._rawCatBudgets[k] === "number" ? state._rawCatBudgets[k] : state.catBudgets[k]) * rate;
+    if (toVnd && typeof state._baseCatBudgetsVnd[k] === "number") {
+      state.catBudgets[k] = state._baseCatBudgetsVnd[k];
+      state._rawCatBudgets[k] = state._baseCatBudgetsVnd[k];
+    } else {
+      state._rawCatBudgets[k] = rawCb;
+      state.catBudgets[k] = roundCurrencyAmount(rawCb, targetCur);
+    }
+  }
+
+  (state.recurring || []).forEach((r) => {
+    if (fromVnd && typeof r._baseVnd !== "number") r._baseVnd = r.amount;
+    const rawRec = (typeof r._rawAmount === "number" ? r._rawAmount : r.amount) * rate;
+    if (toVnd && typeof r._baseVnd === "number") {
+      r.amount = r._baseVnd;
+      r._rawAmount = r._baseVnd;
+    } else {
+      r._rawAmount = rawRec;
+      r.amount = roundCurrencyAmount(rawRec, targetCur);
+    }
+  });
 }
 
 function finalizeCurrency(cur) {
   state.currency = cur;
+  if (cur === "VND") state.vndRate = 1;
+  else if (!state.vndRate || state.vndRate === 1) state.vndRate = DEFAULT_VND_RATES[cur] || 1;
   save();
   el.currencySelect.value = cur;
   reRenderAll();
@@ -484,7 +584,7 @@ async function setCurrency(cur) {
     const data = await res.json();
     const rate = data && data.rates && data.rates[cur];
     if (!rate) throw new Error("Không có tỷ giá");
-    applyRateToAmounts(rate);
+    applyRateToAmounts(rate, cur);
     finalizeCurrency(cur);
     speak(`Đã quy đổi sang ${cur} theo tỷ giá ${from}→${cur} ≈ ${rate}.`, null);
   } catch (e) {
@@ -526,24 +626,42 @@ function deleteRecurring(id) {
 }
 
 function applyRecurring(id) {
-  const r = state.recurring.find((x) => x.id === id);
-  if (!r) return;
   const now = new Date();
   const mk = monthKey(now);
-  if (r.lastApplied === mk) return;
-  const ts = new Date(now.getFullYear(), now.getMonth(), Math.min(r.day, 28), 9, 0, 0).getTime();
-  state.transactions.push({
-    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-    type: "expense", amount: r.amount, note: r.name + " (định kỳ)",
-    essential: true, category: r.category || "bills", ts,
-  });
-  r.lastApplied = mk;
-  state.combo = 0;
-  save();
-  renderStats(); renderHistory(); renderBudget(); renderAnalytics();
-  renderGoal(); renderCatBudgets(); renderRecurring(); renderStreakCombo();
-  speak(`Đã ghi khoản định kỳ "${r.name}" ${formatVND(r.amount)} cho tháng này.`, null);
-  checkAchievements();
+  const targets = id
+    ? state.recurring.filter((x) => x.id === id)
+    : state.recurring.filter((x) => x.lastApplied !== mk && now.getDate() >= x.day);
+  let added = 0;
+  let lastItem = null;
+  for (const r of targets) {
+    if (r.lastApplied === mk) continue;
+    const ts = new Date(now.getFullYear(), now.getMonth(), Math.min(r.day, 28), 9, 0, 0).getTime();
+    state.transactions.push({
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      type: "expense",
+      amount: r.amount,
+      _rawAmount: typeof r._rawAmount === "number" ? r._rawAmount : r.amount,
+      ...(typeof r._baseVnd === "number" ? { _baseVnd: r._baseVnd } : {}),
+      note: r.name + " (định kỳ)",
+      essential: true,
+      category: r.category || "bills",
+      ts,
+    });
+    r.lastApplied = mk;
+    added++;
+    lastItem = r;
+  }
+  if (added > 0) {
+    state.combo = 0;
+    save();
+    reRenderAll();
+    checkChallengeComplete();
+    renderChallenge();
+    if (lastItem && added === 1) {
+      speak(`Đã ghi khoản định kỳ "${lastItem.name}" ${formatVND(lastItem.amount)} cho tháng này.`, null);
+    }
+    checkAchievements();
+  }
 }
 
 function renderRecurring() {
@@ -551,17 +669,20 @@ function renderRecurring() {
   const mk = monthKey(new Date());
   for (const r of state.recurring) {
     const applied = r.lastApplied === mk;
+    const safeId = escapeHtml(r.id);
+    const safeCat = escapeHtml(r.category || "bills");
+    const safeDay = escapeHtml(r.day);
     const li = document.createElement("li");
     li.className = "recurring-item" + (applied ? "" : " due");
     li.innerHTML = `
-      <div class="rec-info">
+      <div class="rec-info" data-category="${safeCat}">
         <div class="rec-name">${escapeHtml(r.name)}</div>
-        <div class="rec-meta">${formatVND(r.amount)} · ngày ${r.day} hằng tháng</div>
+        <div class="rec-meta">${formatVND(r.amount)} · ngày ${safeDay} hằng tháng</div>
       </div>
       ${applied
         ? '<span class="rec-applied">✓ Đã ghi tháng này</span>'
-        : `<button class="rec-apply" data-id="${r.id}">Ghi tháng này</button>`}
-      <button class="rec-del" data-id="${r.id}" title="Xóa">🗑️</button>`;
+        : `<button class="rec-apply" data-id="${safeId}">Ghi tháng này</button>`}
+      <button class="rec-del" data-id="${safeId}" title="Xóa">🗑️</button>`;
     el.recurringList.appendChild(li);
   }
 }
@@ -632,6 +753,9 @@ function saveEdit() {
     return;
   }
   t.amount = amount;
+  t._rawAmount = amount;
+  if (state.currency === "VND") t._baseVnd = amount;
+  else delete t._baseVnd;
   t.note = el.editNote.value.trim();
   if (t.type === "expense") {
     t.category = editing.category;
@@ -639,8 +763,9 @@ function saveEdit() {
   }
   save();
   closeEdit();
-  renderStats(); renderHistory(); renderBudget(); renderAnalytics();
-  renderGoal(); renderCatBudgets(); renderStreakCombo();
+  reRenderAll();
+  checkChallengeComplete();
+  renderChallenge();
   checkAchievements();
 }
 
@@ -663,6 +788,11 @@ function reRenderAll() {
   renderGoal();
   renderCatBudgets();
   renderRecurring();
+  if (typeof renderMoodMeter === "function") renderMoodMeter();
+  if (typeof renderLevel === "function") renderLevel();
+  if (typeof renderChallenge === "function") renderChallenge();
+  if (typeof renderScoldList === "function") renderScoldList();
+  if (typeof renderCharList === "function") renderCharList();
   el.soundBtn.textContent = state.soundOn ? "🔊" : "🔇";
   el.soundBtn.classList.toggle("muted", !state.soundOn);
   if (state.budget > 0) el.budgetInput.value = new Intl.NumberFormat("vi-VN").format(state.budget);
@@ -675,7 +805,11 @@ function reRenderAll() {
 }
 
 function exportData() {
-  const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+  const safeState = {
+    ...state,
+    ai: { ...(state.ai || {}), key: "" },
+  };
+  const blob = new Blob([JSON.stringify(safeState, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   const d = new Date();
@@ -687,6 +821,106 @@ function exportData() {
   speak("Đã xuất dữ liệu ra file. Cất kỹ vào nha con!", null);
 }
 
+function normalizeImportedState(parsed) {
+  const validTypes = new Set(["expense", "income", "saving"]);
+  const transactions = Array.isArray(parsed.transactions)
+    ? parsed.transactions
+        .filter((t) => t && typeof t === "object")
+        .map((t) => {
+          const type = validTypes.has(t.type) ? t.type : "expense";
+          const amount = Math.max(0, Number(t.amount) || 0);
+          return {
+            id: String(t.id || Date.now().toString(36) + Math.random().toString(36).slice(2, 6)),
+            type,
+            amount,
+            ...(typeof t._rawAmount === "number" ? { _rawAmount: t._rawAmount } : {}),
+            ...(typeof t._baseVnd === "number" ? { _baseVnd: t._baseVnd } : {}),
+            note: typeof t.note === "string" ? t.note : "",
+            essential: Boolean(t.essential),
+            category: type === "expense" ? (typeof t.category === "string" && t.category ? t.category : "other") : null,
+            ts: Number.isFinite(Number(t.ts)) ? Number(t.ts) : Date.now(),
+          };
+        })
+    : [];
+
+  const goal =
+    parsed.goal && typeof parsed.goal === "object" && !Array.isArray(parsed.goal)
+      ? {
+          name: typeof parsed.goal.name === "string" ? parsed.goal.name : "",
+          target: Math.max(0, Number(parsed.goal.target) || 0),
+          ...(typeof parsed.goal._rawAmount === "number" ? { _rawAmount: parsed.goal._rawAmount } : {}),
+          ...(typeof parsed.goal._baseVnd === "number" ? { _baseVnd: parsed.goal._baseVnd } : {}),
+        }
+      : { name: "", target: 0 };
+
+  const catBudgets = {};
+  if (parsed.catBudgets && typeof parsed.catBudgets === "object" && !Array.isArray(parsed.catBudgets)) {
+    for (const k of Object.keys(parsed.catBudgets)) {
+      const v = Number(parsed.catBudgets[k]);
+      if (Number.isFinite(v) && v >= 0) catBudgets[k] = v;
+    }
+  }
+
+  const unlocked = Array.isArray(parsed.unlocked)
+    ? parsed.unlocked.filter((x) => typeof x === "string")
+    : [];
+
+  const recurring = Array.isArray(parsed.recurring)
+    ? parsed.recurring
+        .filter((r) => r && typeof r === "object")
+        .map((r) => ({
+          id: String(r.id || Date.now().toString(36) + Math.random().toString(36).slice(2, 5)),
+          name: typeof r.name === "string" ? r.name : "",
+          amount: Math.max(0, Number(r.amount) || 0),
+          ...(typeof r._rawAmount === "number" ? { _rawAmount: r._rawAmount } : {}),
+          ...(typeof r._baseVnd === "number" ? { _baseVnd: r._baseVnd } : {}),
+          category: typeof r.category === "string" && r.category ? r.category : "bills",
+          day: Math.min(28, Math.max(1, parseInt(r.day, 10) || 1)),
+          lastApplied: typeof r.lastApplied === "string" ? r.lastApplied : null,
+        }))
+    : [];
+
+  const customChars = Array.isArray(parsed.customChars)
+    ? parsed.customChars
+        .filter((c) => c && typeof c === "object" && typeof c.id === "string" && typeof c.label === "string")
+        .map((c) => ({
+          id: String(c.id),
+          label: String(c.label),
+          avatar: typeof c.avatar === "string" && c.avatar ? c.avatar : "🧑",
+          scold: Array.isArray(c.scold) ? c.scold.map((s) => String(s)) : [],
+          praise: Array.isArray(c.praise) ? c.praise.map((s) => String(s)) : [],
+        }))
+    : [];
+
+  const customScolds = Array.isArray(parsed.customScolds)
+    ? parsed.customScolds.filter((s) => typeof s === "string")
+    : [];
+
+  const ai =
+    parsed.ai && typeof parsed.ai === "object" && !Array.isArray(parsed.ai)
+      ? {
+          enabled: Boolean(parsed.ai.enabled),
+          key: typeof parsed.ai.key === "string" ? parsed.ai.key : "",
+        }
+      : { enabled: false, key: "" };
+
+  return {
+    ...parsed,
+    salary: Math.max(0, Number(parsed.salary) || 0),
+    budget: Math.max(0, Number(parsed.budget) || 0),
+    currency: CURRENCIES[parsed.currency] ? parsed.currency : "VND",
+    vndRate: Number.isFinite(Number(parsed.vndRate)) && Number(parsed.vndRate) > 0 ? Number(parsed.vndRate) : 1,
+    transactions,
+    goal,
+    catBudgets,
+    unlocked,
+    recurring,
+    customChars,
+    customScolds,
+    ai,
+  };
+}
+
 function importData(file) {
   const reader = new FileReader();
   reader.onload = () => {
@@ -696,8 +930,8 @@ function importData(file) {
         throw new Error("Cấu trúc file không đúng");
       }
       if (!confirm("Nhập dữ liệu này sẽ GHI ĐÈ toàn bộ dữ liệu hiện tại. Tiếp tục?")) return;
-      state = { ...state, ...parsed, ui: { ...state.ui, ...(parsed.ui || {}) } };
-      state.transactions.forEach((t) => { if (t.type === "expense" && !t.category) t.category = "other"; });
+      const normalized = normalizeImportedState(parsed);
+      state = { ...state, ...normalized, ui: { ...state.ui, ...(parsed.ui && typeof parsed.ui === "object" ? parsed.ui : {}) } };
       save();
       reRenderAll();
       speak("Đã nhập dữ liệu thành công! Mẹ nhớ hết tội cũ của con rồi đấy.", null);

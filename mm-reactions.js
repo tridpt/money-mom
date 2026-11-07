@@ -19,11 +19,18 @@ function speak(text, tone) {
 
 // Đọc to bằng giọng nói (Web Speech API)
 let viVoice = null;
+let enVoice = null;
 function pickVoice() {
   if (!("speechSynthesis" in window)) return;
   const voices = speechSynthesis.getVoices();
-  viVoice = voices.find((v) => /vi[-_]?VN/i.test(v.lang) || /vietnam/i.test(v.name)) ||
-            voices.find((v) => v.lang && v.lang.toLowerCase().startsWith(state.lang)) || null;
+  viVoice =
+    voices.find((v) => /vi[-_]?VN/i.test(v.lang) || /vietnam/i.test(v.name)) ||
+    voices.find((v) => v.lang && /^vi/i.test(v.lang)) ||
+    null;
+  enVoice =
+    voices.find((v) => /^en[-_]/i.test(v.lang)) ||
+    voices.find((v) => v.lang && /^en/i.test(v.lang)) ||
+    null;
 }
 if ("speechSynthesis" in window) {
   pickVoice();
@@ -36,7 +43,13 @@ function speakAloud(text) {
     speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
     u.lang = state.lang === "en" ? "en-US" : "vi-VN";
-    if (viVoice) u.voice = viVoice;
+    const voices = speechSynthesis.getVoices ? speechSynthesis.getVoices() : [];
+    if (state.lang === "en") {
+      const voice = enVoice || voices.find((v) => /^en[-_]/i.test(v.lang));
+      if (voice) u.voice = voice;
+    } else if (viVoice) {
+      u.voice = viVoice;
+    }
     u.rate = 1.05;
     u.pitch = 1.1;
     speechSynthesis.speak(u);
@@ -169,7 +182,7 @@ const PRICE_TIERS = [
 
 function priceTierLine(transaction, vars) {
   for (const t of PRICE_TIERS) {
-    if (transaction.amount >= t.min) return pickMessage(t.lines, vars);
+    if (transaction.amount >= vndThreshold(t.min)) return pickMessage(t.lines, vars);
   }
   return pickMessage(PRICE_TIERS[PRICE_TIERS.length - 1].lines, vars);
 }
@@ -191,7 +204,7 @@ function buildContextualScold(transaction, vars) {
   // 3. Đôi khi thêm câu so sánh giá cho đau
   const quip = priceQuip(transaction.amount);
   if (quip && Math.random() < 0.55) line += " " + quip;
-  return applyVoice(line);
+  return line;
 }
 
 // Khịa khoản THIẾT YẾU khi số tiền vô lý so với danh mục
@@ -222,17 +235,17 @@ function bigEssentialRoast(transaction, vars) {
   const amt = transaction.amount;
   const cat = transaction.category;
   const conf = BIG_ESSENTIAL[cat];
-  if (conf && amt >= conf.min) {
+  if (conf && amt >= vndThreshold(conf.min)) {
     let line = pickMessage(conf.lines, vars);
-    if (amt >= 100000000) line += " Mà {amount} thì... con in tiền hả con?!".replace("{amount}", vars.amount);
-    return applyVoice(line);
+    if (amt >= vndThreshold(100000000)) line += " Mà {amount} thì... con in tiền hả con?!".replace("{amount}", vars.amount);
+    return line;
   }
   // Không thuộc danh mục trên nhưng số tiền quá lớn cho một khoản thiết yếu
-  if (amt >= BIG_ESSENTIAL.bills_generic.min) {
+  if (amt >= vndThreshold(BIG_ESSENTIAL.bills_generic.min)) {
     let line = pickMessage(BIG_ESSENTIAL.bills_generic.lines, vars);
     const quip = priceQuip(amt);
     if (quip && Math.random() < 0.6) line += " " + quip;
-    return applyVoice(line);
+    return line;
   }
   return null;
 }
@@ -288,7 +301,7 @@ const INCOME_TIERS = [
 ];
 
 function pickByAmount(tiers, amount, vars) {
-  for (const t of tiers) { if (amount >= t.min) return pickMessage(t.lines, vars); }
+  for (const t of tiers) { if (amount >= vndThreshold(t.min)) return pickMessage(t.lines, vars); }
   return pickMessage(tiers[tiers.length - 1].lines, vars);
 }
 
@@ -348,11 +361,20 @@ function decayAngerOnLoad() {
 }
 
 function angerDelta(t) {
-  if (t.type === "saving") return t.amount >= 5000000 ? -30 : t.amount >= 500000 ? -18 : -8;
+  if (t.type === "saving") return t.amount >= vndThreshold(5000000) ? -30 : t.amount >= vndThreshold(500000) ? -18 : -8;
   if (t.type === "income") return -6;
   if (t.type === "expense") {
-    if (t.essential) return t.amount >= 5000000 ? 12 : 2;
-    let d = t.amount >= 10000000 ? 28 : t.amount >= 2000000 ? 20 : t.amount >= 500000 ? 12 : t.amount >= 100000 ? 7 : 4;
+    if (t.essential) return t.amount >= vndThreshold(5000000) ? 12 : 2;
+    let d =
+      t.amount >= vndThreshold(10000000)
+        ? 28
+        : t.amount >= vndThreshold(2000000)
+          ? 20
+          : t.amount >= vndThreshold(500000)
+            ? 12
+            : t.amount >= vndThreshold(100000)
+              ? 7
+              : 4;
     d += Math.min(state.combo * 2, 16);
     return d;
   }
@@ -407,13 +429,13 @@ function reactTo(transaction) {
   let text, tone, sound;
 
   if (transaction.type === "saving") {
-    text = state.lang === "en" ? pickMessage(m.praise, vars) : applyVoice(pickByAmount(SAVING_TIERS, transaction.amount, vars));
-    const big = transaction.amount >= 500000;
+    text = state.lang === "en" ? pickMessage(m.praise, vars) : pickByAmount(SAVING_TIERS, transaction.amount, vars);
+    const big = transaction.amount >= vndThreshold(500000);
     tone = big ? "praise" : null;
     sound = big ? "praise" : null;
   } else if (transaction.type === "income") {
-    text = state.lang === "en" ? pickMessage(m.income, vars) : applyVoice(pickByAmount(INCOME_TIERS, transaction.amount, vars));
-    const big = transaction.amount >= 500000;
+    text = state.lang === "en" ? pickMessage(m.income, vars) : pickByAmount(INCOME_TIERS, transaction.amount, vars);
+    const big = transaction.amount >= vndThreshold(500000);
     tone = big ? "praise" : null;
     sound = big ? "praise" : null;
   } else {
@@ -452,7 +474,7 @@ function reactTo(transaction) {
     if (state.budget > 0) {
       const spent = getThisMonthExpense(); // đã gồm khoản vừa thêm
       if (spent > state.budget) {
-        text += " " + applyVoice(OVER_BUDGET_LINE());
+        text += " " + OVER_BUDGET_LINE();
         tone = "scold";
         sound = "over";
       }
@@ -461,7 +483,7 @@ function reactTo(transaction) {
     if (!transaction.essential) {
       const cl = comboLine(state.combo);
       if (cl) {
-        text += " " + applyVoice(cl);
+        text += " " + cl;
         tone = "scold";
         sound = "over";
       }
@@ -475,8 +497,8 @@ function reactTo(transaction) {
     }
   }
 
-  lastReaction = { text, tone, mood: state.mood };
   speak(text, tone);
+  lastReaction = { text: el.momMessage.textContent, tone, mood: state.mood };
   if (sound) playSound(sound);
 
   // Hiện nút "Cãi lại" sau khi bị mắng

@@ -192,7 +192,9 @@ function renderCharList() {
   (state.customChars || []).forEach((c) => {
     const li = document.createElement("li");
     li.className = "chip-item";
-    li.innerHTML = `<span>${c.avatar || "🧑"} ${escapeHtml(c.label.replace(c.avatar + " ", ""))} (${(c.scold || []).length} câu)</span><button data-id="${c.id}" title="Xóa">✕</button>`;
+    const avatar = c.avatar || "🧑";
+    const nameOnly = (c.label || "").replace(avatar + " ", "");
+    li.innerHTML = `<span>${escapeHtml(avatar)} ${escapeHtml(nameOnly)} (${(c.scold || []).length} câu)</span><button data-id="${escapeHtml(c.id)}" title="Xóa">✕</button>`;
     el.charList.appendChild(li);
   });
 }
@@ -554,7 +556,7 @@ function gainXp(n) {
 // ---- Thử thách tuần ----
 const CHALLENGES = [
   { id: "save500", reward: 50, vi: "Bỏ heo tổng ≥ 500.000 tuần này", en: "Save ≥ 500,000 total this week",
-    eval: (w) => { const s = w.filter((t) => t.type === "saving").reduce((a, t) => a + t.amount, 0); return { done: s >= 500000, text: `${formatVND(s)} / ${formatVND(500000)}` }; } },
+    eval: (w) => { const target = vndThreshold(500000); const s = w.filter((t) => t.type === "saving").reduce((a, t) => a + t.amount, 0); return { done: s >= target, text: `${formatVND(s)} / ${formatVND(target)}` }; } },
   { id: "save3x", reward: 40, vi: "Bỏ ống ít nhất 3 lần tuần này", en: "Save into the piggy bank ≥ 3 times this week",
     eval: (w) => { const c = w.filter((t) => t.type === "saving").length; return { done: c >= 3, text: `${c}/3 lần` }; } },
   { id: "log4d", reward: 30, vi: "Ghi chép ít nhất 4 ngày khác nhau", en: "Log on at least 4 different days",
@@ -674,8 +676,8 @@ function doBeg() {
   const amount = parseAmount(el.begAmount.value);
   const vars = { amount: formatVND(amount || 0), note: item };
   let chance = 0.5;
-  if (amount >= 10000000) chance -= 0.28;
-  else if (amount >= 2000000) chance -= 0.12;
+  if (amount >= vndThreshold(10000000)) chance -= 0.28;
+  else if (amount >= vndThreshold(2000000)) chance -= 0.12;
   chance -= state.anger / 300;
   const ok = Math.random() < Math.max(0.08, chance);
   if (ok) {
@@ -754,8 +756,10 @@ function showDailyRoast() {
   const seed = d.getFullYear() * 1000 + d.getMonth() * 31 + d.getDate();
   const pool = getMood(state.mood).scold;
   const raw = pool[seed % pool.length];
-  const text = raw.replace(/\{amount\}/g, "kha khá").replace(/\{note\}/g, "thứ đó");
-  lastReaction = { text: applyVoice(text), tone: "scold", mood: state.mood };
-  speak(lastReaction.text, "scold");
+  const amountFallback = state.lang === "en" ? "quite a bit" : "kha khá";
+  const noteFallback = state.lang === "en" ? "that thing" : "thứ đó";
+  const text = raw.replace(/\{amount\}/g, amountFallback).replace(/\{note\}/g, noteFallback);
+  speak(text, "scold");
+  lastReaction = { text: el.momMessage.textContent, tone: "scold", mood: state.mood };
 }
 

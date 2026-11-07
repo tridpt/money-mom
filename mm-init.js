@@ -20,6 +20,7 @@ function init() {
   populateFilterCategories();
   renderMoodMeter();
   renderLevel();
+  checkChallengeComplete();
   renderChallenge();
   setType(state.ui.type);
   setEssential(state.ui.essential);

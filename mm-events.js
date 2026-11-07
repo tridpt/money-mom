@@ -10,13 +10,12 @@ function bindEvents() {
     });
   });
 
-  // Auto format số tiền khi gõ
+  // Auto format số tiền khi gõ (giữ nguyên vị trí con trỏ)
   el.amountInput.addEventListener("input", (e) => {
-    const pos = e.target.value.length;
-    e.target.value = formatNumberInput(e.target.value);
+    formatInputWithCaret(e.target);
   });
   el.salaryInput.addEventListener("input", (e) => {
-    e.target.value = formatNumberInput(e.target.value);
+    formatInputWithCaret(e.target);
   });
 
   el.saveSalaryBtn.addEventListener("click", saveSalary);
@@ -64,7 +63,7 @@ function bindEvents() {
   // Hạn mức
   el.saveBudgetBtn.addEventListener("click", saveBudget);
   el.budgetInput.addEventListener("input", (e) => {
-    e.target.value = formatNumberInput(e.target.value);
+    formatInputWithCaret(e.target);
   });
   el.budgetInput.addEventListener("keydown", (e) => {
     if (e.key === "Enter") saveBudget();
@@ -94,15 +93,22 @@ function bindEvents() {
 
   // Mục tiêu tiết kiệm
   el.saveGoalBtn.addEventListener("click", saveGoal);
-  el.goalTarget.addEventListener("input", (e) => { e.target.value = formatNumberInput(e.target.value); });
+  el.goalTarget.addEventListener("input", (e) => { formatInputWithCaret(e.target); });
   el.goalTarget.addEventListener("keydown", (e) => { if (e.key === "Enter") saveGoal(); });
 
   // Hạn mức theo danh mục
   el.catBudgetBody.addEventListener("input", (e) => {
     const inp = e.target.closest("input[data-cat]");
     if (!inp) return;
-    inp.value = formatNumberInput(inp.value);
-    state.catBudgets[inp.dataset.cat] = parseAmount(inp.value);
+    formatInputWithCaret(inp);
+    const val = parseAmount(inp.value);
+    state.catBudgets[inp.dataset.cat] = val;
+    state._rawCatBudgets = state._rawCatBudgets || {};
+    state._rawCatBudgets[inp.dataset.cat] = val;
+    if (state.currency === "VND") {
+      state._baseCatBudgetsVnd = state._baseCatBudgetsVnd || {};
+      state._baseCatBudgetsVnd[inp.dataset.cat] = val;
+    }
     save();
   });
 
@@ -111,7 +117,7 @@ function bindEvents() {
 
   // Chi tiêu định kỳ
   el.addRecBtn.addEventListener("click", addRecurring);
-  el.recAmount.addEventListener("input", (e) => { e.target.value = formatNumberInput(e.target.value); });
+  el.recAmount.addEventListener("input", (e) => { formatInputWithCaret(e.target); });
   el.recurringList.addEventListener("click", (e) => {
     const applyBtn = e.target.closest(".rec-apply");
     if (applyBtn) { applyRecurring(applyBtn.dataset.id); return; }
@@ -127,7 +133,7 @@ function bindEvents() {
   // Sửa giao dịch
   el.editClose.addEventListener("click", closeEdit);
   el.editModal.addEventListener("click", (e) => { if (e.target === el.editModal) closeEdit(); });
-  el.editAmount.addEventListener("input", (e) => { e.target.value = formatNumberInput(e.target.value); });
+  el.editAmount.addEventListener("input", (e) => { formatInputWithCaret(e.target); });
   el.editCategoryGrid.addEventListener("click", (e) => {
     const btn = e.target.closest(".cat-btn");
     if (btn) { editing.category = btn.dataset.cat; renderEditCategory(); }
@@ -193,6 +199,6 @@ function bindEvents() {
   el.begModal.addEventListener("click", (e) => { if (e.target === el.begModal) el.begModal.classList.remove("show"); });
   el.begAskBtn.addEventListener("click", doBeg);
   el.begLogBtn.addEventListener("click", logBegItem);
-  el.begAmount.addEventListener("input", (e) => { e.target.value = formatNumberInput(e.target.value); });
+  el.begAmount.addEventListener("input", (e) => { formatInputWithCaret(e.target); });
 }
 
